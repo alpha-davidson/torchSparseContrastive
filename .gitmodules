@@ -1,0 +1,3 @@
+[submodule "ATTPCLatent"]
+	path = ATTPCLatent
+	url = https://github.com/alpha-davidson/ATTPCLatent.git
