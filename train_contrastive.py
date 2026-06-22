@@ -1,3 +1,5 @@
+# Edited: J. Gelina 06/22/26
+
 #!/usr/bin/env python3
 """
 train_contrastive.py
