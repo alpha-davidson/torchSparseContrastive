@@ -13,6 +13,7 @@ from torchsparse import SparseTensor
 from torchsparse.backbones.resnet import SparseResNet, SparseResNet21D
 
 
+
 def _sparse_global_avg_pool(x: SparseTensor) -> torch.Tensor:
     """
     Global average pool over all occupied voxels.
