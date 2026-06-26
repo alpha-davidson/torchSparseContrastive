@@ -1,6 +1,24 @@
-backports.cached_property
+# Core ML / training
+torch>=2.0
 numpy
+scikit-learn
+
+# TorchSparse (CUDA required at runtime — install from source)
+# https://github.com/mit-han-lab/torchsparse
+# torchsparse
+
+# Data processing
+h5py
+pandas
 tqdm
+
+# Visualisation
+matplotlib
+seaborn
+umap-learn
+
+# Misc build / packaging helpers
+backports.cached-property
 typing-extensions
 wheel
 attributedict

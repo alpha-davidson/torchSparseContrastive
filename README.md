@@ -1,181 +1,216 @@
-# TorchSparse
+# SparseSimCLR — Contrastive Learning for AT-TPC Particle Track Data
 
-<p align="center">
-<img 
-   src="./docs/figs/torchsparse.png"
-   height="300" 
->
+Self-supervised representation learning on voxelized 3D particle tracks from the Active Target Time Projection Chamber (AT-TPC), using SimCLR and a sparse 3D ResNet backbone ([TorchSparse](https://github.com/mit-han-lab/torchsparse)). Trained without labels; representations are evaluated via linear probing (see [ATTPCLatent](https://github.com/your-org/ATTPCLatent)).
 
+The primary dataset is O16 data from `O16_run160.h5`. Each event is a 3D point cloud of pad hits with fields `x, y, z, time_bucket, amplitude`. The model learns representations that capture track topology without supervision.
 
-TorchSparse is a high-performance neural network library for point cloud processing.
+---
 
-### [website](http://torchsparse.mit.edu/) | [paper (MICRO 2023)](https://www.dropbox.com/scl/fi/obdku0kqxjlkvuom2opk4/paper.pdf?rlkey=0zmy8eq9fzllgkx54zsvwsecf&dl=0) | [paper (MLSys 2022)](https://arxiv.org/abs/2204.10319) | [presentation](https://www.youtube.com/watch?v=IIh4EwmcLUs) | [documents](http://torchsparse-docs.github.io/) | [pypi server](http://pypi.hanlab.ai/simple/torchsparse)
+## Model Architecture
 
+```
+AT-TPC Event (N hits × {x,y,z,amplitude})
+        │
+        ├── augmentation pipeline A ──→ voxelize ──→ SparseTensor (view_a)
+        └── augmentation pipeline B ──→ voxelize ──→ SparseTensor (view_b)
 
-## Introduction
+view_a ──→ SparseResNet21D backbone ──→ global avg pool ──→ h_a (B × 128)
+                                                                 │
+                                                         ProjectionHead (MLP)
+                                                                 │
+                                                         z_a  (B × proj_out_dim)
 
-Point cloud computation has become an increasingly more important workload for autonomous driving and other applications. Unlike dense 2D computation, point cloud convolution has **sparse** and **irregular** computation patterns and thus requires dedicated inference system support with specialized high-performance kernels. While existing point cloud deep learning libraries have developed different dataflows for convolution on point clouds, they assume a single dataflow throughout the execution of the entire model. In this work, we systematically analyze and improve existing dataflows. Our resulting system, TorchSparse, achieves **2.9x**, **3.3x**, **2.2x** and **1.7x** measured end-to-end speedup on an NVIDIA A100 GPU over the state-of-the-art MinkowskiEngine, SpConv 1.2, TorchSparse (MLSys) and SpConv v2 in inference respectively. 
+view_b  [same path] ──→ z_b (B × proj_out_dim)
 
-## News
-**\[2024/11\]** TorchSparse++ is now supporting [MMDetection3D](https://github.com/open-mmlab/mmdetection3d) and [OpenPCDet](https://github.com/open-mmlab/OpenPCDet) via plugins! [A full demo](./examples/) is available.
+NT-Xent loss(z_a, z_b)
+```
 
-**\[2023/11\]** TorchSparse++ has been adopted by [One-2-3-45++](https://arxiv.org/abs/2311.07885) from Prof. Hao Su's lab (UCSD) for 3D object generation!
+**Forward pass (`SparseSimCLR.forward`):**
+1. Both views are passed independently through the same backbone (`SparseResNet21D`).
+2. The last stage's sparse feature map is pooled to a dense vector via `_sparse_global_avg_pool`.
+3. Each pooled vector is projected to a lower-dimensional space by `ProjectionHead` and L2-normalised.
+4. `NTXentLoss` (normalised temperature-scaled cross-entropy) is computed over the batch of positive pairs.
 
-**\[2023/10\]** We present TorchSparse++ at 56th IEEE/ACM International Symposium on Microarchitecture (MICRO 2023). We also fully release the source code of TorchSparse++.
+**Input feature:** amplitude only (`in_channels=1`). xyz coordinates are used for voxelization; amplitude is the per-voxel feature fed to the network.
 
-**\[2023/6\]** TorchSparse++ has been adopted by [One-2-3-45](https://arxiv.org/abs/2306.16928) from Prof. Hao Su's lab (UCSD) for 3D mesh reconstruction!
+---
 
-**\[2023/6\]** TorchSparse++ has been released and presented at CVPR 2023 workshops on autonomous driving. It achieves 1.7-2.9x inference speedup over previous state-of-the-art systems.
+## Data Pipeline
 
-**\[2023/1\]** [Argoverse 2](https://arxiv.org/abs/2301.00493) dataset implements their baseline detector with TorchSparse.
+Raw data lives in `O16_run160.h5`. Run `O16_downstream_pipeline.py` once to produce the numpy arrays consumed by training:
 
-**\[2022/8\]** TorchSparse is presented at MLSys 2022. Talk video is available [here](https://www.youtube.com/watch?v=IIh4EwmcLUs).
+```
+O16_run160.h5
+    │
+    ├─ convert_data()         →  O16_w_event_keys.npy   (n_events, max_hits, 6)
+    │                             cols: x, y, z, time_bucket, amplitude, event_idx
+    │
+    ├─ add_num_tracks()       →  O16_dataset.npy        (n_labelled, max_hits, 7)
+    │                             adds track-count label from O16_labels.csv
+    │
+    ├─ simplify_class()       →  (in-place) re-maps track counts → 3 classes
+    │                             0,1,2 → 0  |  3 → 1  |  4,5 → 2
+    │
+    ├─ random_sample()        →  O16_size512_sampled.npy   (n_events, 512, 5)
+    ├─ scale_data()           →  O16_size512_scaled.npy    (normalised [0,1])
+    ├─ split_train_val_test() →  O16_size512_{train,val,test}.npy
+    └─ generate_trials()      →  O16_size512_{N}train_{features,labels}/trial_k.npy
+```
 
-**\[2022/6\]** TorchSparse has been adopted by [SparseNeuS](https://arxiv.org/pdf/2206.05737) for neural surface reconstruction.
-
-**\[2022/1\]** TorchSparse has been accepted to MLSys 2022, featuring adaptive matrix multiplication grouping and locality-aware memory access.
-
-**\[2021/6\]** TorchSparse v1.4 has been released.
-
-## Installation
-
-We provide pre-built torchsparse v2.1.0 packages (recommended) with different PyTorch and CUDA versions to simplify the building for the Linux system.
-
-1. Ensure at least PyTorch 1.9.0 is installed:
-
-   ```bash
-   python -c "import torch; print(torch.__version__)"
-   >>> 1.10.0
-   ```
-
-1. If you want to use TorchSparse with gpus, please ensure PyTorch was installed with CUDA:
-
-   ```bash
-   python -c "import torch; print(torch.version.cuda)"
-   >>> 11.3
-   ```
-
-1. Then the right TorchSparse wheel can be found and installed by running the installation script:
-
-   ```bash
-   python -c "$(curl -fsSL https://raw.githubusercontent.com/mit-han-lab/torchsparse/master/install.py)"
-   ```
-   
-
-If Pypi server does not work as expected, no worries, you can still manually download the wheels. The wheels are listed in [this website](http://pypi.hanlab.ai/simple/torchsparse). One can utilize our installation script to automatically determine the version number used to index the wheels. For example, if you use PyTorch 1.11.0, CUDA 11.5, the version number will end up to be 2.1.0+torch111cu115. You can then select the proper wheel according to your Python version.
-
-
-You may also alternatively install our library from source via:
+For contrastive training specifically, only the first step is needed:
 
 ```bash
-python setup.py install
-```
-in the repository, or using  
-
-```
-pip install git+https://github.com/mit-han-lab/torchsparse.git
-```
-without the need to clone the repository. 
-
-## Benchmarks
-
-### Inference benchmarks
-
-![eval_benchmark.png](./docs/figs/eval_benchmark.png)
-
-TorchSparse significantly outperforms existing point cloud inference engines in both 3D object detection and LiDAR segmentation benchmarks across three generations of GPU architecture (Pascal, Turing and Ampere)  and all precisions (FP16, TF32, FP32). It is up to **1.7x** faster than state-of-the-art SpConv 2.3.5 and is up to **2.2x** faster than  
-TorchSparse-MLsys on cloud GPUs. It also improves the latency of SpConv 2.3.5 by **1.25×** on Orin.
-
-### Training benchmarks
-
-![train_benchmark.png](./docs/figs/train_benchmark.png)
-
-TorchSparse achieves superior mixed-precision training speed compared with MinkowskiEngine, TorchSparse-MLSys and SpConv 2.3.5. Specifically, it is **1.16x** faster on Tesla A100, **1.27x** faster on RTX 2080 Ti than state-of-the-art SpConv 2.3.5. It also significantly outperforms MinkowskiEngine by **4.6-4.8x** across seven benchmarks on A100 and 2080 Ti. Measured with batch size = 2.
-
-You may find our benchmarks from [this link](https://zenodo.org/records/8311889). To access preprocessed datasets, please contact the authors. We cannot publicly release raw data from SemanticKITTI, nuScenes and Waymo due to license requirements.
-
-
-## Team
-
-TorchSparse is developed by the following wonderful team:
-
-- [Haotian Tang](http://kentang.net): Ph.D. student (2020-) at MIT EECS, project lead, v2.0 and v2.1 lead;
-- [Shang Yang](http://ys-2020.github.io): Ph.D. student (2023-) at MIT EECS, project lead, v2.1 lead;
-- [Zhijian Liu](http://zhijianliu.com): Ph.D. student (2018-) at MIT EECS, project lead, v2.0 lead;
-- [Xiuyu Li](http://xiuyuli.com): Ph.D. student (2022-) at UC Berkeley EECS, v2.0 lead;
-- [Ke Hong](https://ieeexplore.ieee.org/author/37089419138): Graduate student (2021-) at Tsinghua University EE, v2.1 core developer, authored PCEngine kernels;
-- [Zhongming Yu](https://fishmingyu.github.io/): Ph.D. student (2022-) at UCSD CS, v2.1 core developer, authored PCEngine kernels;
-- [Yujun Lin](https://yujunlin.com/): Ph.D. student (2018-) at MIT EECS, v2.0 core developer;
-- [Yingqi Cao](https://github.com/ioeddk): Undergrad student at UC San Diego, currently working on the TorchSparse++ integration into algorithm frameworks;
-- [Guohao Dai](https://scholar.google.com/citations?user=gz3Tkl0AAAAJ&hl=en): Associate Professor at Shanghai Jiao Tong University, mentor of the project;
-- [Yu Wang](http://nicsefc.ee.tsinghua.edu.cn/): Professor at Tsinghua University, mentor of the project;
-- [Song Han](https://songhan.mit.edu): Associate Professor at MIT EECS, mentor of the project.
-
-
-## Citation
-
-If you use TorchSparse, please use the following BibTeX entries to cite:
-
-TorchSparse++ (TorchSparse v2.1) is presented at MICRO 2023:
-
-```bibtex
-@inproceedings{tangandyang2023torchsparse,  
-  title={TorchSparse++: Efficient Training and Inference Framework for Sparse Convolution on GPUs},  
-  author={Tang, Haotian and Yang, Shang and Liu, Zhijian and Hong, Ke and Yu, Zhongming and Li, Xiuyu and Dai, Guohao and Wang, Yu and Han, Song},  
-  booktitle={IEEE/ACM International Symposium on Microarchitecture (MICRO)},  
-  year={2023}
-}
+python O16_downstream_pipeline.py   # or: sbatch run_O16_downstream_pipeline.sh
+# produces: data/O16_w_event_keys.npy, data/O16_event_lens.npy
 ```
 
-Preliminary version of TorchSparse++ (TorchSparse v2.1) is presented at CVPR Workshops 2023:
+---
 
-```bibtex
-@inproceedings{tangandyang2023torchsparse++,
-  title = {{TorchSparse++: Efficient Point Cloud Engine}},
-  author = {Tang, Haotian and Yang, Shang and Liu, Zhijian and Hong, Ke and Yu, Zhongming and Li, Xiuyu and Dai, Guohao and Wang, Yu and Han, Song},
-  booktitle = {Computer Vision and Pattern Recognition Workshops (CVPRW)},
-  year = {2023}
-}
+## File Reference
+
+### Core Model — `model.py`
+
+| Symbol | Purpose |
+|---|---|
+| `_sparse_global_avg_pool` | Scatter-averages all occupied voxel features into one `(B, C)` dense tensor |
+| `ProjectionHead` | Two-layer MLP (Linear → BN → ReLU → Linear → optional BN) that maps backbone features to the contrastive embedding space |
+| `NTXentLoss` | NT-Xent loss: builds a `(2B, 2B)` cosine-similarity matrix, masks self-pairs, and computes cross-entropy with positive-pair targets |
+| `SparseSimCLR` | Top-level module; owns the backbone, projector, and criterion; exposes `encode()` (backbone + pool) and `project()` (encode + project + normalise) |
+| `sparse_simclr_21d()` | Convenience constructor: builds `SparseResNet21D` + `SparseSimCLR` with one call |
+
+### Re-export Shim — `sparse_simclr.py`
+Thin module that loads `model.py` via `importlib` and re-exports `SparseSimCLR` and `sparse_simclr_21d`. Allows training scripts to do `from sparse_simclr import ...` regardless of Python path.
+
+### Augmentations — `augmentations.py`
+All augmentations operate on raw `(N, 3)` numpy point clouds and return a copy. Applied twice independently to the same event to produce the two contrastive views.
+
+| Class | Effect |
+|---|---|
+| `RandomRotation` | Random rotation around one or more axes |
+| `RandomJitter` | Per-point Gaussian noise (clipped) — simulates pad noise and gain variation |
+| `RandomScale` | Uniform scale factor |
+| `RandomFlip` | Random axis flip with probability `p` |
+| `RandomPointDropout` | Drops a fraction of hits and resamples replacements — simulates missing pads |
+| `RandomShift` | Random global translation |
+| `Compose` | Chains a list of augmentations sequentially |
+| `attpc_augmentation()` | AT-TPC preset: stronger jitter (`σ=0.02`) and dropout (`p=0.2`); no flip since track direction is physically meaningful |
+
+### O16 Dataset — `o16_dataset.py`
+Loads O16 AT-TPC events from the numpy arrays produced by `O16_downstream_pipeline.py`.
+
+| Symbol | Purpose |
+|---|---|
+| `O16Dataset` | `Dataset` that loads events from mmap'd `.npy` files, normalises xyz and amplitude per-event to `[0,1]`, applies augmentations independently twice, and voxelizes each view into a `SparseTensor`; returns `{view_a, view_b, original}` |
+| `collate_o16_batch` | Collate function: calls `sparse_collate` on both views |
+| `make_o16_dataloader` | Convenience factory used by `train_contrastive.py` |
+| `attpc_aug_list()` | Returns the default list of AT-TPC augmentation transforms |
+
+**Column layout of `O16_w_event_keys.npy` (axis-2):**
+```
+0  x            mm
+1  y            mm
+2  z            mm
+3  t            time bucket
+4  A            amplitude (charge)
+5  event_idx
 ```
 
-TorchSparse is presented at MLSys 2022:
+### Data Processing Pipeline — `O16_downstream_pipeline.py`
+Sequential pipeline that converts `O16_run160.h5` to train/val/test numpy arrays with track-count labels. Each step is a standalone function; run `main()` to execute the full pipeline. See the Data Pipeline section above for the full step-by-step flow.
 
-```bibtex
-@inproceedings{tang2022torchsparse,
-  title = {{TorchSparse: Efficient Point Cloud Inference Engine}},
-  author = {Tang, Haotian and Liu, Zhijian and Li, Xiuyu and Lin, Yujun and Han, Song},
-  booktitle = {Conference on Machine Learning and Systems (MLSys)},
-  year = {2022}
-}
+### Contrastive Training — `train_contrastive.py`
+Main self-supervised training loop.
+
+- Builds a `SparseSimCLR` model via `sparse_simclr_21d()`.
+- Loads O16 events via `make_o16_dataloader` (`in_channels=1`, amplitude only).
+- Uses Adam + cosine annealing LR with gradient clipping.
+- Saves `best.pt` on every loss improvement and `epoch_NNN.pt` every `--save-every` epochs.
+- Writes `run_config.json` alongside checkpoints so downstream scripts can automatically match model hyperparameters.
+
+```bash
+# Direct run
+python train_contrastive.py \
+    --data data/O16_w_event_keys.npy \
+    --lens data/O16_event_lens.npy \
+    --in-channels 1 \
+    --epochs 100 --batch-size 16
+
+# Resume from checkpoint
+python train_contrastive.py \
+    --data data/O16_w_event_keys.npy \
+    --lens data/O16_event_lens.npy \
+    --resume checkpoints/best.pt
+
+# SLURM submit (recommended on cluster)
+sbatch run_train_O16_contrastive.sh
 ```
 
-Initial version of TorchSparse is part of the SPVNAS paper at ECCV 2020:
+### Latent Extraction — `extract_latents.py`
+Runs a trained encoder over the dataset (no augmentation) and saves per-sample feature vectors and integer class labels as aligned `.npy` arrays, ready for downstream evaluation with [ATTPCLatent](https://github.com/your-org/ATTPCLatent).
 
-```bibtex
-@inproceedings{tang2020searching,
-  title = {{Searching Efficient 3D Architectures with Sparse Point-Voxel Convolution}},
-  author = {Tang, Haotian and Liu, Zhijian and Zhao, Shengyu and Lin, Yujun and Lin, Ji and Wang, Hanrui and Han, Song},
-  booktitle = {European Conference on Computer Vision (ECCV)},
-  year = {2020}
-}
+- Reads `run_config.json` automatically to reconstruct the exact model that was trained; CLI flags override any entry.
+- Calls `model.encode()` — backbone + global pool only, no projection head.
+- Outputs `latent_vectors.npy` `(N, 128)` and `labels.npy` `(N,)`.
+- **Requires GPU** — TorchSparse sparse downsampling is CUDA-only.
+- If `--labels` is not provided, `labels.npy` is saved as `-1` placeholders so the output directory is always complete.
+
+```bash
+python extract_latents.py \
+    --checkpoint checkpoints/best.pt \
+    --data data/O16_w_event_keys.npy \
+    --lens data/O16_event_lens.npy \
+    --labels data/O16_size512_labels.npy   # optional
 ```
 
-PCEngine paper is accepted by MLSys 2023:
+---
 
-```bibtex
-@inproceedings{hong2023pcengine,
-  title={{Exploiting Hardware Utilization and Adaptive Dataflow for Efficient Sparse Convolution in 3D Point Clouds}},
-  author={Hong, Ke and Yu, Zhongming and Dai, Guohao and Yang, Xinhao and Lian, Yaoxiu and Liu, Zehao and Xu, Ningyi and Wang, Yu},
-  booktitle={Sixth Conference on Machine Learning and Systems (MLSys)},
-  year={2023}
-}
+## Quick Start
+
+```bash
+# 1. Process raw data (one time only)
+python O16_downstream_pipeline.py
+# produces: data/O16_w_event_keys.npy, data/O16_event_lens.npy
+
+# 2. Self-supervised contrastive training
+sbatch run_train_O16_contrastive.sh
+# or directly:
+python train_contrastive.py \
+    --data data/O16_w_event_keys.npy \
+    --lens data/O16_event_lens.npy \
+    --in-channels 1 --epochs 100
+
+# 3. Extract frozen backbone representations
+python extract_latents.py --checkpoint checkpoints/best.pt
+
+# 4. Evaluate with linear probing (ATTPCLatent repo)
+python linear_probing.py --name O16 checkpoints/latent_vectors.npy checkpoints/labels.npy
 ```
 
-## Acknowledgement
+---
 
-We thank Yan Yan from TuSimple for helpful discussions. Please also have a look at the [dgSparse](https://dgsparse.github.io/) library, which is designed for fast and efficient sparse computation on graphs and point clouds. The work from PCEngine (MLSys 2023) team is also highly related to us. 
+## Checkpoints Directory Layout
 
-TorchSparse is inspired by many existing open-source libraries, including (but not limited to) [MinkowskiEngine](https://github.com/NVIDIA/MinkowskiEngine), [SECOND](https://github.com/traveller59/second.pytorch) and [SparseConvNet](https://github.com/facebookresearch/SparseConvNet).
+```
+checkpoints/
+  run_config.json        # hyperparameters saved by train_contrastive.py
+  best.pt                # lowest avg NT-Xent loss across all epochs
+  epoch_010.pt           # periodic checkpoints (every --save-every epochs)
+  final.pt               # state at the end of training
+  loss_history.json      # per-epoch {epoch, avg_loss, lr} log
+  latent_vectors.npy     # produced by extract_latents.py
+  labels.npy             # aligned class labels (same order as latent_vectors)
+```
 
-We also thank [AttributeDict](https://github.com/grimen/python-attributedict/tree/master) for providing an elegant way to manage the kernel/model configurations.
+---
 
+## Dependencies
+
+- PyTorch ≥ 2.0
+- [TorchSparse](https://github.com/mit-han-lab/torchsparse) — **must be installed from source; CUDA required**
+- scikit-learn, numpy, matplotlib, umap-learn (evaluation + visualisation)
+- h5py, pandas, tqdm (data processing pipeline)
+
+Install all non-TorchSparse dependencies:
+```bash
+pip install -r requirements.txt
+```
