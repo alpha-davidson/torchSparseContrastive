@@ -225,7 +225,7 @@ def simclr_augmentation(
         RandomShift(max_shift=0.1),
     ])
 
-
+##looked up realistic augmentations for AT-TPC
 def attpc_augmentation() -> Compose:
     """
     Augmentation pipeline tuned for AT-TPC particle track data.

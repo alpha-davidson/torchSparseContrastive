@@ -39,7 +39,7 @@ from torch.optim.lr_scheduler import CosineAnnealingLR
 _HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(_HERE))
 
-from contrastive_dataset import make_contrastive_dataloader, load_metadata
+from o16_dataset import make_o16_dataloader
 from sparse_simclr import sparse_simclr_21d, SparseSimCLR
 
 
@@ -52,7 +52,10 @@ def build_parser() -> argparse.ArgumentParser:
         description="Train SparseSimCLR on TorchSparse contrastive ShapeNet data.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-    p.add_argument("--data", type=Path, required=True)
+    p.add_argument("--data", type=Path, required=True,
+                   help="Path to O16_w_event_keys.npy")
+    p.add_argument("--lens", type=Path, default=Path("data/O16_event_lens.npy"),
+                   help="Path to O16_event_lens.npy")
     p.add_argument("--voxel-size",       type=float, default=0.05)
     p.add_argument("--num-workers",      type=int,   default=0)
     p.add_argument("--epochs",           type=int,   default=100)
@@ -60,7 +63,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--lr",               type=float, default=3e-4)
     p.add_argument("--weight-decay",     type=float, default=1e-4)
     p.add_argument("--grad-clip",        type=float, default=1.0)
-    p.add_argument("--in-channels",      type=int,   default=3)
+    p.add_argument("--in-channels",      type=int,   default=1)
     p.add_argument("--proj-out-dim",     type=int,   default=128)
     p.add_argument("--proj-hidden-dim",  type=int,   default=512)
     p.add_argument("--temperature",      type=float, default=0.1)
@@ -135,23 +138,16 @@ def main() -> None:
     if device.type == "cuda":
         print(f"  GPU: {torch.cuda.get_device_name(0)}")
 
-    # dataset info
-    meta = load_metadata(args.data)
-    print(f"\nDataset: {meta['num_samples']} samples  "
-          f"| {meta['num_classes']} classes: {meta['class_names']}")
-    if "train_samples" in meta:
-        print(f"  train={meta['train_samples']}  "
-              f"val={meta['val_samples']}  test={meta['test_samples']}")
-
     # dataloader
-    loader = make_contrastive_dataloader(
-        args.data,
+    loader = make_o16_dataloader(
+        data_path=str(args.data),
+        lens_path=str(args.lens),
         batch_size=args.batch_size,
         voxel_size=args.voxel_size,
-        split="train" if "train_samples" in meta else None,
         shuffle=True,
         num_workers=args.num_workers,
     )
+    print(f"\nDataset: {len(loader.dataset)} events")
     print(f"Train batches: {len(loader)}  "
           f"(batch_size={args.batch_size})\n")
 
