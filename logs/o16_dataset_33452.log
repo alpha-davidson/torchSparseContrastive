@@ -1,4 +1,0 @@
-Dataset size: 60784 events
-view_a  feats : torch.Size([456, 1])   dtype=torch.float32
-view_a  coords: torch.Size([456, 4])  dtype=torch.int32
-Smoke-test passed.
