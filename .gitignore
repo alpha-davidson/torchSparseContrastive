@@ -1,3 +1,6 @@
 .vscode/
 build/
 *.pyc
+
+# Large local data files
+data/

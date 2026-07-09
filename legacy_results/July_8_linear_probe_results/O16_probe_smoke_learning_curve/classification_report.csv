@@ -1,0 +1,7 @@
+label,precision,recall,f1-score,support
+0-track,0.8261,0.8819,0.8531,237
+1-track,0.4462,0.3053,0.3625,95
+2-track,0.7701,0.8375,0.8024,160
+accuracy,,,0.7561,
+macro avg,0.6808,0.6749,0.6727,492
+weighted avg,0.7345,0.7561,0.7419,492

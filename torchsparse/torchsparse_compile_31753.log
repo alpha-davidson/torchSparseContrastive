@@ -1,0 +1,178 @@
+=== Job Started ===
+Using Secret C Compiler: /home/DAVIDSON/tomallenntiador/gcc11_bin/bin/x86_64-conda-linux-gnu-gcc
+Using Secret C++ Compiler: /home/DAVIDSON/tomallenntiador/gcc11_bin/bin/x86_64-conda-linux-gnu-g++
+=== Wiping workspace cache ===
+torchsparse version: 2.1.0
+running clean
+'build/lib.linux-x86_64-cpython-310' does not exist -- can't clean it
+'build/bdist.linux-x86_64' does not exist -- can't clean it
+'build/scripts-3.10' does not exist -- can't clean it
+=== Launching Pip Compilation ===
+Processing ./.
+  Preparing metadata (pyproject.toml): started
+  Preparing metadata (pyproject.toml): finished with status 'done'
+Requirement already satisfied: numpy in /home/DAVIDSON/tomallenntiador/.local/lib/python3.10/site-packages (from torchsparse==2.1.0) (2.2.6)
+Requirement already satisfied: backports.cached_property in /home/DAVIDSON/tomallenntiador/.local/lib/python3.10/site-packages (from torchsparse==2.1.0) (1.0.2)
+Collecting tqdm (from torchsparse==2.1.0)
+  Downloading tqdm-4.68.2-py3-none-any.whl.metadata (58 kB)
+Requirement already satisfied: typing-extensions in /home/DAVIDSON/tomallenntiador/.local/lib/python3.10/site-packages (from torchsparse==2.1.0) (4.15.0)
+Requirement already satisfied: wheel in /home/DAVIDSON/tomallenntiador/.conda/envs/Torch/lib/python3.10/site-packages (from torchsparse==2.1.0) (0.47.0)
+Requirement already satisfied: rootpath in /home/DAVIDSON/tomallenntiador/.local/lib/python3.10/site-packages (from torchsparse==2.1.0) (0.1.1)
+Requirement already satisfied: torch in /home/DAVIDSON/tomallenntiador/.local/lib/python3.10/site-packages (from torchsparse==2.1.0) (2.11.0+cu128)
+Requirement already satisfied: torchvision in /home/DAVIDSON/tomallenntiador/.local/lib/python3.10/site-packages (from torchsparse==2.1.0) (0.26.0+cu128)
+Requirement already satisfied: six>=1.11.0 in /home/DAVIDSON/tomallenntiador/.local/lib/python3.10/site-packages (from rootpath->torchsparse==2.1.0) (1.17.0)
+Requirement already satisfied: coloredlogs>=10.0 in /home/DAVIDSON/tomallenntiador/.local/lib/python3.10/site-packages (from rootpath->torchsparse==2.1.0) (15.0.1)
+Requirement already satisfied: termcolor>=1.1.0 in /home/DAVIDSON/tomallenntiador/.local/lib/python3.10/site-packages (from rootpath->torchsparse==2.1.0) (3.3.0)
+Requirement already satisfied: colour-runner>=0.0.5 in /home/DAVIDSON/tomallenntiador/.local/lib/python3.10/site-packages (from rootpath->torchsparse==2.1.0) (0.1.1)
+Requirement already satisfied: deepdiff>=3.3.0 in /home/DAVIDSON/tomallenntiador/.local/lib/python3.10/site-packages (from rootpath->torchsparse==2.1.0) (9.1.0)
+Requirement already satisfied: pygments>=2.2.0 in /home/DAVIDSON/tomallenntiador/.local/lib/python3.10/site-packages (from rootpath->torchsparse==2.1.0) (2.20.0)
+Requirement already satisfied: tox>=3.0.0 in /home/DAVIDSON/tomallenntiador/.local/lib/python3.10/site-packages (from rootpath->torchsparse==2.1.0) (4.55.0)
+Requirement already satisfied: coverage>=4.5.2 in /home/DAVIDSON/tomallenntiador/.local/lib/python3.10/site-packages (from rootpath->torchsparse==2.1.0) (7.14.1)
+Requirement already satisfied: codecov>=2.0.15 in /home/DAVIDSON/tomallenntiador/.local/lib/python3.10/site-packages (from rootpath->torchsparse==2.1.0) (2.1.13)
+Requirement already satisfied: requests>=2.7.9 in /home/DAVIDSON/tomallenntiador/.conda/envs/Torch/lib/python3.10/site-packages (from codecov>=2.0.15->rootpath->torchsparse==2.1.0) (2.34.2)
+Requirement already satisfied: humanfriendly>=9.1 in /home/DAVIDSON/tomallenntiador/.local/lib/python3.10/site-packages (from coloredlogs>=10.0->rootpath->torchsparse==2.1.0) (10.0)
+Requirement already satisfied: blessings in /home/DAVIDSON/tomallenntiador/.local/lib/python3.10/site-packages (from colour-runner>=0.0.5->rootpath->torchsparse==2.1.0) (1.7)
+Requirement already satisfied: cachebox<6,>=5.2 in /home/DAVIDSON/tomallenntiador/.local/lib/python3.10/site-packages (from deepdiff>=3.3.0->rootpath->torchsparse==2.1.0) (5.2.3)
+Requirement already satisfied: orderly-set<6,>=5.5.0 in /home/DAVIDSON/tomallenntiador/.local/lib/python3.10/site-packages (from deepdiff>=3.3.0->rootpath->torchsparse==2.1.0) (5.5.0)
+Requirement already satisfied: charset_normalizer<4,>=2 in /home/DAVIDSON/tomallenntiador/.conda/envs/Torch/lib/python3.10/site-packages (from requests>=2.7.9->codecov>=2.0.15->rootpath->torchsparse==2.1.0) (3.4.4)
+Requirement already satisfied: idna<4,>=2.5 in /home/DAVIDSON/tomallenntiador/.conda/envs/Torch/lib/python3.10/site-packages (from requests>=2.7.9->codecov>=2.0.15->rootpath->torchsparse==2.1.0) (3.18)
+Requirement already satisfied: urllib3<3,>=1.26 in /home/DAVIDSON/tomallenntiador/.conda/envs/Torch/lib/python3.10/site-packages (from requests>=2.7.9->codecov>=2.0.15->rootpath->torchsparse==2.1.0) (2.7.0)
+Requirement already satisfied: certifi>=2023.5.7 in /home/DAVIDSON/tomallenntiador/.conda/envs/Torch/lib/python3.10/site-packages (from requests>=2.7.9->codecov>=2.0.15->rootpath->torchsparse==2.1.0) (2026.5.20)
+Requirement already satisfied: cachetools>=7.0.3 in /home/DAVIDSON/tomallenntiador/.local/lib/python3.10/site-packages (from tox>=3.0.0->rootpath->torchsparse==2.1.0) (7.1.4)
+Requirement already satisfied: colorama>=0.4.6 in /home/DAVIDSON/tomallenntiador/.local/lib/python3.10/site-packages (from tox>=3.0.0->rootpath->torchsparse==2.1.0) (0.4.6)
+Requirement already satisfied: filelock>=3.25 in /home/DAVIDSON/tomallenntiador/.local/lib/python3.10/site-packages (from tox>=3.0.0->rootpath->torchsparse==2.1.0) (3.29.0)
+Requirement already satisfied: packaging>=26 in /home/DAVIDSON/tomallenntiador/.local/lib/python3.10/site-packages (from tox>=3.0.0->rootpath->torchsparse==2.1.0) (26.2)
+Requirement already satisfied: platformdirs>=4.9.4 in /home/DAVIDSON/tomallenntiador/.local/lib/python3.10/site-packages (from tox>=3.0.0->rootpath->torchsparse==2.1.0) (4.10.0)
+Requirement already satisfied: pluggy>=1.6 in /home/DAVIDSON/tomallenntiador/.local/lib/python3.10/site-packages (from tox>=3.0.0->rootpath->torchsparse==2.1.0) (1.6.0)
+Requirement already satisfied: pyproject-api>=1.10 in /home/DAVIDSON/tomallenntiador/.local/lib/python3.10/site-packages (from tox>=3.0.0->rootpath->torchsparse==2.1.0) (1.10.1)
+Requirement already satisfied: python-discovery>=1.2.2 in /home/DAVIDSON/tomallenntiador/.local/lib/python3.10/site-packages (from tox>=3.0.0->rootpath->torchsparse==2.1.0) (1.4.0)
+Requirement already satisfied: tomli-w>=1.2 in /home/DAVIDSON/tomallenntiador/.local/lib/python3.10/site-packages (from tox>=3.0.0->rootpath->torchsparse==2.1.0) (1.2.0)
+Requirement already satisfied: tomli>=2.4 in /home/DAVIDSON/tomallenntiador/.local/lib/python3.10/site-packages (from tox>=3.0.0->rootpath->torchsparse==2.1.0) (2.4.1)
+Requirement already satisfied: virtualenv>=21.1 in /home/DAVIDSON/tomallenntiador/.local/lib/python3.10/site-packages (from tox>=3.0.0->rootpath->torchsparse==2.1.0) (21.4.2)
+Requirement already satisfied: distlib<1,>=0.3.7 in /home/DAVIDSON/tomallenntiador/.local/lib/python3.10/site-packages (from virtualenv>=21.1->tox>=3.0.0->rootpath->torchsparse==2.1.0) (0.4.1)
+Collecting setuptools<82 (from torch->torchsparse==2.1.0)
+  Downloading setuptools-81.0.0-py3-none-any.whl.metadata (6.6 kB)
+Requirement already satisfied: sympy>=1.13.3 in /home/DAVIDSON/tomallenntiador/.local/lib/python3.10/site-packages (from torch->torchsparse==2.1.0) (1.14.0)
+Requirement already satisfied: networkx>=2.5.1 in /home/DAVIDSON/tomallenntiador/.local/lib/python3.10/site-packages (from torch->torchsparse==2.1.0) (3.4.2)
+Requirement already satisfied: jinja2 in /home/DAVIDSON/tomallenntiador/.local/lib/python3.10/site-packages (from torch->torchsparse==2.1.0) (3.1.6)
+Requirement already satisfied: fsspec>=0.8.5 in /home/DAVIDSON/tomallenntiador/.local/lib/python3.10/site-packages (from torch->torchsparse==2.1.0) (2026.4.0)
+Requirement already satisfied: cuda-toolkit==12.8.1 in /home/DAVIDSON/tomallenntiador/.local/lib/python3.10/site-packages (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==12.8.1; platform_system == "Linux"->torch->torchsparse==2.1.0) (12.8.1)
+Requirement already satisfied: cuda-bindings<13,>=12.9.4 in /home/DAVIDSON/tomallenntiador/.local/lib/python3.10/site-packages (from torch->torchsparse==2.1.0) (12.9.4)
+Requirement already satisfied: nvidia-cudnn-cu12==9.19.0.56 in /home/DAVIDSON/tomallenntiador/.local/lib/python3.10/site-packages (from torch->torchsparse==2.1.0) (9.19.0.56)
+Requirement already satisfied: nvidia-cusparselt-cu12==0.7.1 in /home/DAVIDSON/tomallenntiador/.local/lib/python3.10/site-packages (from torch->torchsparse==2.1.0) (0.7.1)
+Requirement already satisfied: nvidia-nccl-cu12==2.28.9 in /home/DAVIDSON/tomallenntiador/.local/lib/python3.10/site-packages (from torch->torchsparse==2.1.0) (2.28.9)
+Requirement already satisfied: nvidia-nvshmem-cu12==3.4.5 in /home/DAVIDSON/tomallenntiador/.local/lib/python3.10/site-packages (from torch->torchsparse==2.1.0) (3.4.5)
+Requirement already satisfied: triton==3.6.0 in /home/DAVIDSON/tomallenntiador/.local/lib/python3.10/site-packages (from torch->torchsparse==2.1.0) (3.6.0)
+Requirement already satisfied: nvidia-nvjitlink-cu12==12.8.93.* in /home/DAVIDSON/tomallenntiador/.local/lib/python3.10/site-packages (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==12.8.1; platform_system == "Linux"->torch->torchsparse==2.1.0) (12.8.93)
+Requirement already satisfied: nvidia-cufft-cu12==11.3.3.83.* in /home/DAVIDSON/tomallenntiador/.local/lib/python3.10/site-packages (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==12.8.1; platform_system == "Linux"->torch->torchsparse==2.1.0) (11.3.3.83)
+Requirement already satisfied: nvidia-curand-cu12==10.3.9.90.* in /home/DAVIDSON/tomallenntiador/.local/lib/python3.10/site-packages (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==12.8.1; platform_system == "Linux"->torch->torchsparse==2.1.0) (10.3.9.90)
+Requirement already satisfied: nvidia-cublas-cu12==12.8.4.1.* in /home/DAVIDSON/tomallenntiador/.local/lib/python3.10/site-packages (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==12.8.1; platform_system == "Linux"->torch->torchsparse==2.1.0) (12.8.4.1)
+Requirement already satisfied: nvidia-cuda-nvrtc-cu12==12.8.93.* in /home/DAVIDSON/tomallenntiador/.local/lib/python3.10/site-packages (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==12.8.1; platform_system == "Linux"->torch->torchsparse==2.1.0) (12.8.93)
+Requirement already satisfied: nvidia-cusparse-cu12==12.5.8.93.* in /home/DAVIDSON/tomallenntiador/.local/lib/python3.10/site-packages (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==12.8.1; platform_system == "Linux"->torch->torchsparse==2.1.0) (12.5.8.93)
+Requirement already satisfied: nvidia-cuda-cupti-cu12==12.8.90.* in /home/DAVIDSON/tomallenntiador/.local/lib/python3.10/site-packages (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==12.8.1; platform_system == "Linux"->torch->torchsparse==2.1.0) (12.8.90)
+Requirement already satisfied: nvidia-cuda-runtime-cu12==12.8.90.* in /home/DAVIDSON/tomallenntiador/.local/lib/python3.10/site-packages (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==12.8.1; platform_system == "Linux"->torch->torchsparse==2.1.0) (12.8.90)
+Requirement already satisfied: nvidia-cufile-cu12==1.13.1.3.* in /home/DAVIDSON/tomallenntiador/.local/lib/python3.10/site-packages (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==12.8.1; platform_system == "Linux"->torch->torchsparse==2.1.0) (1.13.1.3)
+Requirement already satisfied: nvidia-nvtx-cu12==12.8.90.* in /home/DAVIDSON/tomallenntiador/.local/lib/python3.10/site-packages (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==12.8.1; platform_system == "Linux"->torch->torchsparse==2.1.0) (12.8.90)
+Requirement already satisfied: nvidia-cusolver-cu12==11.7.3.90.* in /home/DAVIDSON/tomallenntiador/.local/lib/python3.10/site-packages (from cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==12.8.1; platform_system == "Linux"->torch->torchsparse==2.1.0) (11.7.3.90)
+Requirement already satisfied: cuda-pathfinder~=1.1 in /home/DAVIDSON/tomallenntiador/.local/lib/python3.10/site-packages (from cuda-bindings<13,>=12.9.4->torch->torchsparse==2.1.0) (1.2.2)
+Requirement already satisfied: mpmath<1.4,>=1.1.0 in /home/DAVIDSON/tomallenntiador/.local/lib/python3.10/site-packages (from sympy>=1.13.3->torch->torchsparse==2.1.0) (1.3.0)
+Requirement already satisfied: MarkupSafe>=2.0 in /home/DAVIDSON/tomallenntiador/.local/lib/python3.10/site-packages (from jinja2->torch->torchsparse==2.1.0) (3.0.3)
+Requirement already satisfied: pillow!=8.3.*,>=5.3.0 in /home/DAVIDSON/tomallenntiador/.local/lib/python3.10/site-packages (from torchvision->torchsparse==2.1.0) (12.2.0)
+Downloading setuptools-81.0.0-py3-none-any.whl (1.1 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.1/1.1 MB 55.9 MB/s  0:00:00
+Downloading tqdm-4.68.2-py3-none-any.whl (78 kB)
+Building wheels for collected packages: torchsparse
+  Building wheel for torchsparse (pyproject.toml): started
+  Building wheel for torchsparse (pyproject.toml): finished with status 'error'
+  error: subprocess-exited-with-error
+  
+  × Building wheel for torchsparse (pyproject.toml) did not run successfully.
+  │ exit code: 1
+  ╰─> [78 lines of output]
+      torchsparse version: 2.1.0
+      running bdist_wheel
+      running build
+      running build_py
+      creating build/lib.linux-x86_64-cpython-310/torchsparse
+      copying torchsparse/operators.py -> build/lib.linux-x86_64-cpython-310/torchsparse
+      copying torchsparse/backends.py -> build/lib.linux-x86_64-cpython-310/torchsparse
+      copying torchsparse/tensor.py -> build/lib.linux-x86_64-cpython-310/torchsparse
+      copying torchsparse/__init__.py -> build/lib.linux-x86_64-cpython-310/torchsparse
+      copying torchsparse/version.py -> build/lib.linux-x86_64-cpython-310/torchsparse
+      creating build/lib.linux-x86_64-cpython-310/torchsparse/utils
+      copying torchsparse/utils/tune.py -> build/lib.linux-x86_64-cpython-310/torchsparse/utils
+      copying torchsparse/utils/to_dense.py -> build/lib.linux-x86_64-cpython-310/torchsparse/utils
+      copying torchsparse/utils/utils.py -> build/lib.linux-x86_64-cpython-310/torchsparse/utils
+      copying torchsparse/utils/tensor_cache.py -> build/lib.linux-x86_64-cpython-310/torchsparse/utils
+      copying torchsparse/utils/__init__.py -> build/lib.linux-x86_64-cpython-310/torchsparse/utils
+      copying torchsparse/utils/collate.py -> build/lib.linux-x86_64-cpython-310/torchsparse/utils
+      copying torchsparse/utils/quantize.py -> build/lib.linux-x86_64-cpython-310/torchsparse/utils
+      creating build/lib.linux-x86_64-cpython-310/torchsparse/backbones
+      copying torchsparse/backbones/resnet.py -> build/lib.linux-x86_64-cpython-310/torchsparse/backbones
+      copying torchsparse/backbones/__init__.py -> build/lib.linux-x86_64-cpython-310/torchsparse/backbones
+      copying torchsparse/backbones/unet.py -> build/lib.linux-x86_64-cpython-310/torchsparse/backbones
+      creating build/lib.linux-x86_64-cpython-310/torchsparse/nn
+      copying torchsparse/nn/__init__.py -> build/lib.linux-x86_64-cpython-310/torchsparse/nn
+      creating build/lib.linux-x86_64-cpython-310/torchsparse/backbones/modules
+      copying torchsparse/backbones/modules/blocks.py -> build/lib.linux-x86_64-cpython-310/torchsparse/backbones/modules
+      copying torchsparse/backbones/modules/__init__.py -> build/lib.linux-x86_64-cpython-310/torchsparse/backbones/modules
+      creating build/lib.linux-x86_64-cpython-310/torchsparse/nn/utils
+      copying torchsparse/nn/utils/kernel.py -> build/lib.linux-x86_64-cpython-310/torchsparse/nn/utils
+      copying torchsparse/nn/utils/apply.py -> build/lib.linux-x86_64-cpython-310/torchsparse/nn/utils
+      copying torchsparse/nn/utils/__init__.py -> build/lib.linux-x86_64-cpython-310/torchsparse/nn/utils
+      creating build/lib.linux-x86_64-cpython-310/torchsparse/nn/functional
+      copying torchsparse/nn/functional/voxelize.py -> build/lib.linux-x86_64-cpython-310/torchsparse/nn/functional
+      copying torchsparse/nn/functional/pooling.py -> build/lib.linux-x86_64-cpython-310/torchsparse/nn/functional
+      copying torchsparse/nn/functional/activation.py -> build/lib.linux-x86_64-cpython-310/torchsparse/nn/functional
+      copying torchsparse/nn/functional/devoxelize.py -> build/lib.linux-x86_64-cpython-310/torchsparse/nn/functional
+      copying torchsparse/nn/functional/crop.py -> build/lib.linux-x86_64-cpython-310/torchsparse/nn/functional
+      copying torchsparse/nn/functional/query.py -> build/lib.linux-x86_64-cpython-310/torchsparse/nn/functional
+      copying torchsparse/nn/functional/count.py -> build/lib.linux-x86_64-cpython-310/torchsparse/nn/functional
+      copying torchsparse/nn/functional/__init__.py -> build/lib.linux-x86_64-cpython-310/torchsparse/nn/functional
+      copying torchsparse/nn/functional/hash.py -> build/lib.linux-x86_64-cpython-310/torchsparse/nn/functional
+      creating build/lib.linux-x86_64-cpython-310/torchsparse/nn/modules
+      copying torchsparse/nn/modules/__init__.py -> build/lib.linux-x86_64-cpython-310/torchsparse/nn/modules
+      copying torchsparse/nn/modules/norm.py -> build/lib.linux-x86_64-cpython-310/torchsparse/nn/modules
+      copying torchsparse/nn/modules/activation.py -> build/lib.linux-x86_64-cpython-310/torchsparse/nn/modules
+      copying torchsparse/nn/modules/crop.py -> build/lib.linux-x86_64-cpython-310/torchsparse/nn/modules
+      copying torchsparse/nn/modules/conv.py -> build/lib.linux-x86_64-cpython-310/torchsparse/nn/modules
+      copying torchsparse/nn/modules/pooling.py -> build/lib.linux-x86_64-cpython-310/torchsparse/nn/modules
+      copying torchsparse/nn/modules/bev.py -> build/lib.linux-x86_64-cpython-310/torchsparse/nn/modules
+      creating build/lib.linux-x86_64-cpython-310/torchsparse/nn/functional/conv
+      copying torchsparse/nn/functional/conv/conv_config.py -> build/lib.linux-x86_64-cpython-310/torchsparse/nn/functional/conv
+      copying torchsparse/nn/functional/conv/conv.py -> build/lib.linux-x86_64-cpython-310/torchsparse/nn/functional/conv
+      copying torchsparse/nn/functional/conv/__init__.py -> build/lib.linux-x86_64-cpython-310/torchsparse/nn/functional/conv
+      copying torchsparse/nn/functional/conv/conv_mode.py -> build/lib.linux-x86_64-cpython-310/torchsparse/nn/functional/conv
+      creating build/lib.linux-x86_64-cpython-310/torchsparse/nn/functional/conv/kmap
+      copying torchsparse/nn/functional/conv/kmap/upsample.py -> build/lib.linux-x86_64-cpython-310/torchsparse/nn/functional/conv/kmap
+      copying torchsparse/nn/functional/conv/kmap/build_kmap.py -> build/lib.linux-x86_64-cpython-310/torchsparse/nn/functional/conv/kmap
+      copying torchsparse/nn/functional/conv/kmap/downsample.py -> build/lib.linux-x86_64-cpython-310/torchsparse/nn/functional/conv/kmap
+      copying torchsparse/nn/functional/conv/kmap/__init__.py -> build/lib.linux-x86_64-cpython-310/torchsparse/nn/functional/conv/kmap
+      creating build/lib.linux-x86_64-cpython-310/torchsparse/nn/functional/conv/func
+      copying torchsparse/nn/functional/conv/func/gather_scatter.py -> build/lib.linux-x86_64-cpython-310/torchsparse/nn/functional/conv/func
+      copying torchsparse/nn/functional/conv/func/fetch_on_demand.py -> build/lib.linux-x86_64-cpython-310/torchsparse/nn/functional/conv/func
+      copying torchsparse/nn/functional/conv/func/__init__.py -> build/lib.linux-x86_64-cpython-310/torchsparse/nn/functional/conv/func
+      copying torchsparse/nn/functional/conv/func/implicit_gemm.py -> build/lib.linux-x86_64-cpython-310/torchsparse/nn/functional/conv/func
+      creating build/lib.linux-x86_64-cpython-310/torchsparse/nn/functional/conv/utils
+      copying torchsparse/nn/functional/conv/utils/__init__.py -> build/lib.linux-x86_64-cpython-310/torchsparse/nn/functional/conv/utils
+      copying torchsparse/nn/functional/conv/utils/collections.py -> build/lib.linux-x86_64-cpython-310/torchsparse/nn/functional/conv/utils
+      copying torchsparse/nn/functional/conv/utils/compat.py -> build/lib.linux-x86_64-cpython-310/torchsparse/nn/functional/conv/utils
+      creating build/lib.linux-x86_64-cpython-310/torchsparse/nn/functional/conv/hash
+      copying torchsparse/nn/functional/conv/hash/hash.py -> build/lib.linux-x86_64-cpython-310/torchsparse/nn/functional/conv/hash
+      copying torchsparse/nn/functional/conv/hash/query.py -> build/lib.linux-x86_64-cpython-310/torchsparse/nn/functional/conv/hash
+      copying torchsparse/nn/functional/conv/hash/__init__.py -> build/lib.linux-x86_64-cpython-310/torchsparse/nn/functional/conv/hash
+      creating build/lib.linux-x86_64-cpython-310/torchsparse/nn/functional/conv/kmap/func
+      copying torchsparse/nn/functional/conv/kmap/func/hashmap.py -> build/lib.linux-x86_64-cpython-310/torchsparse/nn/functional/conv/kmap/func
+      copying torchsparse/nn/functional/conv/kmap/func/hashmap_on_the_fly.py -> build/lib.linux-x86_64-cpython-310/torchsparse/nn/functional/conv/kmap/func
+      copying torchsparse/nn/functional/conv/kmap/func/__init__.py -> build/lib.linux-x86_64-cpython-310/torchsparse/nn/functional/conv/kmap/func
+      running build_ext
+      error: nvcc not found at '/home/DAVIDSON/tomallenntiador/.conda/envs/Torch/bin/nvcc'. Ensure CUDA path '/home/DAVIDSON/tomallenntiador/.conda/envs/Torch' is correct.
+      [end of output]
+  
+  note: This error originates from a subprocess, and is likely not a problem with pip.
+  ERROR: Failed building wheel for torchsparse
+Failed to build torchsparse
+error: failed-wheel-build-for-install
+
+× Failed to build installable wheels for some pyproject.toml based projects
+╰─> torchsparse
