@@ -32,7 +32,7 @@ For a file-by-file explanation of `src/`, see [src/README.md](src/README.md).
 ---
 
 ## Main O16 workflow
-
+```
 Convert the h5 file, we need data ;/
 # run_convert_data.sh
         ↓
@@ -60,6 +60,8 @@ Probe and evaluation
         ↓
 PCA, T-SNE and UMAP from ATTPC Latent
 # global_feature_exploration
+
+```
 --------------------------------------
 
 ### 1. Convert raw O16 data
