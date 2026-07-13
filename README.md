@@ -90,7 +90,7 @@ python -u -m src.training.train_contrastive
 Important current settings:
 
 ```text
-voxel_size       = 0.025
+voxel_size       = 0.025 (0 to 40 on all axes)
 hash_rsv_ratio   = 8
 in_channels      = 1   # amplitude only
 ```
