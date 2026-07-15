@@ -3,7 +3,7 @@ build/
 *.pyc
 
 # Large local data files
-data/
+/data/
 checkpoints/
 checkpoints_debug/
 logs/
