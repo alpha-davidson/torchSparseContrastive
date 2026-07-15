@@ -1,5 +1,5 @@
-# Created: J. Gelina 06/26/26
-# Edited: T. Mallen-Ntiador 07/08/26
+# Edited: J. Gelina 06/26/26
+# Updated: T. Mallen-Ntiador 07/2026 — adapted for no-resample pipeline
 
 #!/usr/bin/env python3
 """
@@ -12,9 +12,12 @@ evaluation with linear_probing.py.
 Two extraction modes
 --------------------
 1. Split mode (default, recommended):
-   Loads from the pre-split .npy files produced by O16_downstream_pipeline.py
-   (O16_size512_train.npy, _val.npy, _test.npy). Labels are embedded in those
-   files, so features and labels are always aligned. Use this for linear probing.
+   Loads from the pre-split .npy files produced by
+   O16_downstream(no_resample).py:
+       O16_UNSAMPLED_{train,val,test}.npy     — shape (N, max_len, 5)
+       O16_UNSAMPLED_{train,val,test}_lens.npy — true point counts per event
+   Labels are embedded at [:, 0, 4]; event lengths let us strip padding
+   exactly. Use this for linear probing.
 
 2. Raw mode (fallback):
    Loads directly from O16_w_event_keys.npy via O16Dataset. Used when split
@@ -25,9 +28,9 @@ Usage
 # Split mode — uses split files in data/ by default:
     python extract_latents.py --checkpoint checkpoints/best.pt
 
-# Explicit split directory or sample size:
+# Explicit split directory:
     python extract_latents.py --checkpoint checkpoints/best.pt \\
-        --split-dir /path/to/data --sample-size 512
+        --split-dir /path/to/data
 
 # Raw mode (no split files available):
     python extract_latents.py --checkpoint checkpoints/best.pt \\
@@ -54,14 +57,19 @@ from src.data.o16_dataset import O16Dataset
 from src.models.sparse_simclr import sparse_simclr_21d, SparseSimCLR
 
 
-# ---------------------------------------------------------------------------
-# Split-file dataset
-# ---------------------------------------------------------------------------
+# Constants — must match O16_downstream(no_resample).py
+OUT_PREFIX = "O16_UNSAMPLED"
+
+
+# Split-file dataset (no-resample version)
 
 class _O16SplitDataset(Dataset):
     """
-    Load one pre-split O16 .npy file (shape N, 512, 5) from
-    O16_downstream_pipeline.py and voxelise each event for inference.
+    Load one pre-split O16 .npy file (shape N, max_len, 5) produced by
+    O16_downstream(no_resample).py and voxelise each event for inference.
+
+    Uses the companion _lens.npy file to strip zero-padding exactly,
+    rather than relying on nonzero heuristics.
 
     Applies the same per-event normalisation as O16Dataset (training
     preprocessing) so features are consistent with what the backbone saw
@@ -70,27 +78,32 @@ class _O16SplitDataset(Dataset):
         q    — per-event min-max to [0, 1]
     """
 
-    def __init__(self, path: Path, voxel_size: float):
+    def __init__(self, data_path: Path, lens_path: Path, voxel_size: float):
         from torchsparse import SparseTensor
         from torchsparse.utils.quantize import sparse_quantize
         self._SparseTensor    = SparseTensor
         self._sparse_quantize = sparse_quantize
         self.voxel_size = voxel_size
 
-        data = np.load(path)
-        label_col = 5 if data.shape[2] > 5 else 4
-        self.labels = data[:, 0, label_col].astype(np.int64)
-        self.events = data[:, :, :4]              # x, y, z, q  (all 512 rows)
+        data = np.load(data_path)               # (N, max_len, 5)
+        self.labels     = data[:, 0, 4].astype(np.int64)
+        self.events     = data[:, :, :4]         # x, y, z, q
+        self.event_lens = np.load(lens_path).astype(int)  # (N,)
+
+        assert len(self.events) == len(self.event_lens), (
+            f"Data/lens shape mismatch: {len(self.events)} events vs "
+            f"{len(self.event_lens)} lengths"
+        )
 
     def __len__(self):
         return len(self.labels)
 
     def __getitem__(self, i):
-        pts     = self.events[i]                  # (512, 4)
-        nonzero = pts[pts[:, 0] != 0]             # strip padding zeros
+        n   = self.event_lens[i]
+        pts = self.events[i, :n]                 # (n, 4) — real points only
 
-        xyz = nonzero[:, :3].astype(np.float32)
-        q   = nonzero[:, 3:4].astype(np.float32)
+        xyz = pts[:, :3].astype(np.float32)
+        q   = pts[:, 3:4].astype(np.float32)
 
         # per-event normalise xyz to [0, 1]  (matches O16Dataset._load_event)
         lo  = xyz.min(axis=0, keepdims=True)
@@ -125,9 +138,7 @@ def _collate_raw(batch):
     return {"x": sparse_collate([b["original"] for b in batch])}
 
 
-# ---------------------------------------------------------------------------
 # CLI
-# ---------------------------------------------------------------------------
 
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
@@ -144,9 +155,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     # Split mode (default)
     p.add_argument("--split-dir", type=Path, default=Path("data"),
-                   help="Directory containing O16_size{N}_{train,val,test}.npy files.")
-    p.add_argument("--sample-size", type=int, default=None,
-                   help="SAMPLE_SIZE used in O16_downstream_pipeline.py (default 512).")
+                   help="Directory containing O16_UNSAMPLED_{train,val,test}.npy files.")
 
     # Raw mode fallback
     p.add_argument("--no-splits", action="store_true",
@@ -193,7 +202,7 @@ def resolve_args(args: argparse.Namespace) -> argparse.Namespace:
     defaults = {
         "voxel_size": 0.05, "hash_rsv_ratio": 8.0, "batch_size": 16, "num_workers": 0,
         "in_channels": 1, "proj_out_dim": 128, "proj_hidden_dim": 512,
-        "temperature": 0.1, "final_bn": False, "sample_size": 512,
+        "temperature": 0.1, "final_bn": False,
     }
     for key, val in defaults.items():
         if getattr(args, key) is None:
@@ -202,14 +211,11 @@ def resolve_args(args: argparse.Namespace) -> argparse.Namespace:
     return args
 
 
-# ---------------------------------------------------------------------------
 # Extraction helpers
-# ---------------------------------------------------------------------------
 
 def extract_from_splits(
     model: SparseSimCLR,
     split_dir: Path,
-    sample_size: int,
     voxel_size: float,
     device: torch.device,
     batch_size: int,
@@ -219,12 +225,19 @@ def extract_from_splits(
     all_feats, all_labels = [], []
 
     for split in ("train", "val", "test"):
-        path = split_dir / f"O16_size{sample_size}_{split}.npy"
-        if not path.exists():
-            print(f"  [{split}] not found at {path} — skipping.")
-            continue
+        data_path = split_dir / f"{OUT_PREFIX}_{split}.npy"
+        lens_path = split_dir / f"{OUT_PREFIX}_{split}_lens.npy"
 
-        ds     = _O16SplitDataset(path, voxel_size)
+        if not data_path.exists():
+            print(f"  [{split}] not found at {data_path} — skipping.")
+            continue
+        if not lens_path.exists():
+            raise FileNotFoundError(
+                f"Found {data_path} but missing companion lengths file "
+                f"{lens_path}.\nRe-run O16_downstream(no_resample).py."
+            )
+
+        ds     = _O16SplitDataset(data_path, lens_path, voxel_size)
         loader = DataLoader(ds, batch_size=batch_size, shuffle=False,
                             collate_fn=_collate_split, num_workers=num_workers)
         print(f"  {split}: {len(ds)} events, {len(loader)} batches")
@@ -238,8 +251,8 @@ def extract_from_splits(
     if not all_feats:
         raise FileNotFoundError(
             f"No split files found in {split_dir} matching "
-            f"O16_size{sample_size}_{{train,val,test}}.npy.\n"
-            f"Run O16_downstream_pipeline.py first, or use --no-splits."
+            f"{OUT_PREFIX}_{{train,val,test}}.npy.\n"
+            f"Run O16_downstream(no_resample).py first, or use --no-splits."
         )
 
     return np.concatenate(all_feats), np.concatenate(all_labels)
@@ -279,9 +292,7 @@ def extract_from_raw(
     return feats, labels
 
 
-# ---------------------------------------------------------------------------
 # Main
-# ---------------------------------------------------------------------------
 
 def main() -> None:
     args = build_parser().parse_args()
@@ -323,7 +334,7 @@ def main() -> None:
         )
     else:
         feats, labels = extract_from_splits(
-            model, args.split_dir, args.sample_size, args.voxel_size, device,
+            model, args.split_dir, args.voxel_size, device,
             args.batch_size, args.num_workers,
         )
 

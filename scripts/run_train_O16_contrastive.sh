@@ -20,17 +20,17 @@ cd /home/DAVIDSON/tomallenntiador/torchSparseContrastive
 DATA="data/O16_w_event_keys.npy"
 LENS="data/O16_event_lens.npy"
 SAVE_DIR="checkpoints"
-RESUME="checkpoints/best.pt"
+RESUME=""
 
 # --- Training ---
-EPOCHS=10
+EPOCHS=100
 BATCH_SIZE=16
 LR=3e-4
 WEIGHT_DECAY=1e-4
 GRAD_CLIP=1.0
 SAVE_EVERY=10
 NUM_WORKERS=0
-VOXEL_SIZE=0.025
+VOXEL_SIZE=0.00390625 # 1/256
 HASH_RSV_RATIO=8
 # Set to a positive integer for a short smoke test.
 MAX_BATCHES=""

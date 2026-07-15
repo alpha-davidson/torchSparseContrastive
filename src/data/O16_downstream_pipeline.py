@@ -4,7 +4,7 @@ name: O16_downstream_pipeline.py
 Use this to create O16 data in different event sizes and trials to be used to evaluate benchmark vs. pretrained across different number of events.
  
 date created: Jul 22, 2024
-Last Edit: Apr 2026
+Last Edit: Jul 2026 (does the dataset exist checks)
 Hakan Bora Yavuzkara
 """
  
@@ -335,10 +335,10 @@ def generate_trials(split_later=False):
 def main():
     os.makedirs(DATA_PATH, exist_ok=True)
 
-    # one-time conversion (comment out after first run)
-    # print("1: convert h5 to npy")
-    # data_h5 = h5py.File(DATA_PATH + 'O16_run160.h5', 'r')
-    # convert_data(data_h5)
+    #one-time conversion (comment out after first run)
+    print("1: convert h5 to npy")
+    data_h5 = h5py.File(DATA_PATH + 'O16_run160.h5', 'r')
+    convert_data(data_h5)
  
     print("2: attach track labels")
     add_num_tracks()
