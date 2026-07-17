@@ -51,7 +51,7 @@ def _augment(transforms: list, xyz: np.ndarray, feats: np.ndarray):
 def attpc_aug_list() -> list:
     """Augmentation transforms tuned for AT-TPC on normalised [0,1] coords."""
     return [
-        RandomRotation(axes="y", angle_range=(0, 360)),
+        RandomRotation(axes="z", angle_range=(0, 360)),
         RandomScale(lo=0.9, hi=1.1),
         RandomJitter(sigma=0.02, clip=0.08),
         RandomPointDropout(p=0.2),

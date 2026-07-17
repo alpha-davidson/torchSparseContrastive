@@ -11,3 +11,4 @@ results_generation_(temp_sanity_check)/
 legacy_results/
 embeddings/
 linear_probe_results/
+ipynb_checkpoints/

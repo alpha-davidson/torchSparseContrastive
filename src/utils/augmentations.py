@@ -7,7 +7,7 @@ and returns an augmented copy of the same shape.
 Typical usage
 -------------
     aug = Compose([
-        RandomRotation(axes='y'),
+        RandomRotation(axes='z'),
         RandomJitter(sigma=0.01, clip=0.05),
         RandomScale(lo=0.8, hi=1.25),
         RandomPointDropout(p=0.1),
@@ -46,7 +46,7 @@ class RandomRotation(Augmentation):
         (min_deg, max_deg) rotation range. Default is full 360°.
     """
 
-    def __init__(self, axes: str = "y", angle_range: tuple = (0, 360)):
+    def __init__(self, axes: str = "z", angle_range: tuple = (0, 360)):
         self.axes        = axes
         self.angle_range = angle_range
 
@@ -198,7 +198,7 @@ class Compose(Augmentation):
 # ---------------------------------------------------------------------------
 
 def simclr_augmentation(
-    rotation_axes: str  = "y",
+    rotation_axes: str  = "z",
     jitter_sigma: float = 0.01,
     jitter_clip: float  = 0.05,
     scale_lo: float     = 0.8,
@@ -235,7 +235,7 @@ def attpc_augmentation() -> Compose:
     direction is physically meaningful.
     """
     return Compose([
-        RandomRotation(axes="y", angle_range=(0, 360)),
+        RandomRotation(axes="z", angle_range=(0, 360)),
         RandomScale(lo=0.9, hi=1.1),
         RandomJitter(sigma=0.02, clip=0.1),
         RandomPointDropout(p=0.2),
