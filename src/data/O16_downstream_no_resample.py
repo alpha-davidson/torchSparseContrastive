@@ -5,9 +5,12 @@ Using the O16 dataset for downstream tasks without resampling. To evaluate
 the model's performance on this dataset, we will use the original distribution 
 of samples without any resampling techniques.
 
-Date created: Jul 13, 2026
-Last Edited: Jul 2026
-Tony Mallen-Ntiador 
+July 20th: Scaling error fixes applied to the file =), orignally scaled then
+split, now split then scale
+
+Date created: Jul 13, 2026 (Tony Mallen-Ntiador)
+Last Edited: Jul 2026 (Tony Mallen-Ntiador)
+
 """
 
 import tqdm
@@ -15,9 +18,6 @@ import numpy as np
 import h5py
 import os
 import pandas as pd
-from sklearn import preprocessing
-
-# from src.data.O16_downstream_pipeline import generate_trials, split_train_val_test
 
 DATA_PATH = '/home/DAVIDSON/tomallenntiador/torchSparseContrastive/data/'
 ISOTOPE = 'O16'
@@ -29,9 +29,11 @@ RUN_CONVERT = False
 
 TRIALS = 10
 # number of events in downstream tasks
-DATA_SIZES = [30,45,60,90,120,150,180,210,240,270,300,360,420, 480, 570, 700, 830, 1000, 1200, 1400]
+DATA_SIZES = [30, 45, 60, 90, 120, 150, 180, 210, 240, 270,
+              300, 360, 420, 480, 570, 700, 830, 1000, 1200, 1400]
 
-# 1 - make sure the data/label files exist
+
+# 1 – make sure the data/label files exist
 def ensure_labels_csv_exists():
     """
     Ensure O16_labels.csv exists.
@@ -73,17 +75,18 @@ def ensure_labels_csv_exists():
         f"Fill in the 'Number of tracks' column, then rerun the pipeline."
     )
 
-# 2 - convert the h5py file to numpy arrays
+
+# 2 – convert the h5py file to numpy arrays
 def convert_data(data):
     """Convert raw h5 point-cloud to numpy arrays and save to DATA_PATH."""
     keys = list(data.keys())
- 
+
     # event lengths
     event_lens = np.zeros(len(keys), int)
     for i in range(len(keys)):
         event_lens[i] = len(data[keys[i]])
     np.save(DATA_PATH + ISOTOPE + '_event_lens.npy', event_lens)
- 
+
     # full event array  shape: (n_events, max_len, 6)
     # cols: x, y, z, time, amplitude, event_index
     event_data = np.zeros((len(keys), np.max(event_lens), 6), float)
@@ -94,19 +97,20 @@ def convert_data(data):
             instant = np.array(list(e))
             event_data[n, i, :5] = instant[:5]
             event_data[n, i, 5]  = float(n)
- 
+
     # fix the known empty event at (index 56437)
     event_data[56437, 0, 5] = 56437
     np.save(DATA_PATH + ISOTOPE + '_w_event_keys.npy', event_data)
     print(f'[convert_data] saved event array {event_data.shape}')
 
-# removed add_num_tracks()
-# sike, uno_reverse.
+
+
+# 3 – attach track-count labels from the CSV
 def add_num_tracks():
     """
     Read O16_labels.csv (columns: 'Event number', 'Number of tracks') and
     build a dataset array of shape (n_labelled_events, max_len, 7).
- 
+
     Layout of dataset returned:
         0-2 : x, y, z
         3   : amplitude (q)
@@ -114,7 +118,8 @@ def add_num_tracks():
         5   : number of tracks (raw label)
         6   : event length
 
-    Only the point at index 0 contains the event index, number of tracks, and event length information.
+    Only the point at index 0 contains the event index, number of tracks,
+    and event length information.
     """
     event_data = np.load(DATA_PATH + ISOTOPE + '_w_event_keys.npy')
     event_lens = np.load(DATA_PATH + ISOTOPE + '_event_lens.npy')
@@ -124,11 +129,11 @@ def add_num_tracks():
         labels_path,
         usecols=['Event number', 'Number of tracks']
     )
-    
+
     labels  = np.array(df['Number of tracks'])
     indices = np.array(df['Event number'])
     max_len = int(np.max(event_lens))
- 
+
     dataset = np.zeros((len(indices), max_len, 7), float)
     count   = 0
     for i in range(len(indices)):
@@ -141,13 +146,13 @@ def add_num_tracks():
             dataset[count, 0,        5] = labels[i]                        # track label
             dataset[count, 0,        6] = ev_len                           # event length
             count += 1
- 
+
     dataset = dataset[:count]
     np.save(DATA_PATH + ISOTOPE + '_dataset.npy', dataset)
     print(f'[add_num_tracks] dataset shape: {dataset.shape}')
 
-# 3 – simplify track-count labels  (from voxel pipeline simplify_class)
-# This can certainly be updated to work differently
+
+# 4 – simplify track-count labels (from voxel pipeline simplify_class)
 def simplify_class():
     """
     Re-map raw track counts to 3 classes:
@@ -158,19 +163,20 @@ def simplify_class():
     """
     dataset = np.load(DATA_PATH + ISOTOPE + '_dataset.npy')
     labels  = dataset[:, 0, 5].astype(int)
-    label_to_code        = np.array([0, 0, 0, 1, 2, 2])
+    label_to_code = np.array([0, 0, 0, 1, 2, 2])
     if labels.min() < 0 or labels.max() >= len(label_to_code):
         raise ValueError(
             f"Unexpected raw track label range: min={labels.min()}, max={labels.max()}. "
             f"Expected labels in [0, {len(label_to_code) - 1}]."
         )
-    dataset[:, 0, 5]     = label_to_code[labels]
+    dataset[:, 0, 5] = label_to_code[labels]
     np.save(DATA_PATH + ISOTOPE + '_dataset.npy', dataset)
     unique, counts = np.unique(dataset[:, 0, 5], return_counts=True)
     print(f'[simplify_class] class distribution: {dict(zip(unique.astype(int), counts))}')
 
-# changed from original to use a variable number of points in training instead
-# of the fixed resample to SAMPLE_SIZE=512 points
+
+
+# 5 – reformat columns (no resampling)
 def reformat_columns():
     """
     Remap the 7-col dataset (x,y,z,q,event_idx,label,event_len)
@@ -189,66 +195,34 @@ def reformat_columns():
     for idx in range(n_events):
         n = event_lens[idx]
         new_data[idx, :n, :4] = dataset[idx, :n, :4]  # x, y, z, q
-        new_data[idx, 0,  4]  = dataset[idx, 0,  5]   # class label
+        new_data[idx, 0,  4]  = dataset[idx, 0,  5]    # class label
 
     np.save(DATA_PATH + OUT_PREFIX + '_all.npy', new_data)
     np.save(DATA_PATH + OUT_PREFIX + '_event_lens.npy', event_lens)
     print(f'[reformat_columns] output shape: {new_data.shape}')
 
 
-# 4 - data scaling to x,y,z,q features
-def scale_data():
-    """
-    Standard-scale x, y, z to [0,1] and leave q unscaled.
-    Label column [:, 0, 4] is left untouched.
 
-    Scaling follows the analysis in plotting/exploreData.ipynb.
+# 6 – split into train / val / test  (on UNSCALED data)
+def split_train_val_test(split_later=False):
+    """
+    Split the *unscaled* reformatted data into train/val/test (60/20/20)
+    or trainval/test (80/20) when split_later=True.
+
+    Saves the raw (unscaled) splits and their event lengths.
     """
     data = np.load(DATA_PATH + OUT_PREFIX + '_all.npy')
     event_lens = np.load(DATA_PATH + OUT_PREFIX + '_event_lens.npy')
-    
-    for col in range(3):
-        # global min_max from real points only
-        all_real = np.concatenate(
-            [data[i, :event_lens[i], col] for i in range(len(data))]
-        )
-        min_val, max_val = all_real.min(), all_real.max()
-
-        # scale only real rows per event, padding stays zero
-        for i in range(len(data)):
-            n = event_lens[i]
-            data[i, :n, col] = (data[i, :n, col] - min_val) / (max_val - min_val)
- 
-    assert np.sum(np.isnan(data)) == 0,  'NaNs after scaling'
-    assert np.sum(np.isinf(data)) == 0,  'Infs after scaling'
- 
-    np.save(DATA_PATH + OUT_PREFIX + '_scaled.npy', data)
-    print('[scale_data] scaling complete')
-    
-#TODO, Get rid of split_later completely, inherited from Hakan file
-# will experiment and later implement in the future.
-def split_train_val_test(split_later=False):
-    # Split_later is used to combine train and val files in order to keep test files constant, and train and val depend
-    # on the number of data
-    """
-    Splits scaled data 60/20/20.
-    Saves:
-        O16_UNSAMPLED_train.npy   shape (0.6*N, max_len, 5)
-        O16_UNSAMPLED_val.npy     shape (0.2*N, max_len, 5)
-        O16_UNSAMPLED_test.npy    shape (0.2*N, max_len, 5)
-        O16_UNSAMPLED_*_lens.npy  true unpadded lengths for each split
-    And convenience feature/label files for val and test.
-    """
-    data = np.load(DATA_PATH + OUT_PREFIX + '_scaled.npy')
-    event_lens = np.load(DATA_PATH + OUT_PREFIX + '_event_lens.npy')
     rand_shuffle = np.random.permutation(len(data))
-    # If you want only the training data size to change
+
+    base = DATA_PATH + OUT_PREFIX
+
     if not split_later:
-        print("7: 60/20/20 split")
-        n          = len(data)
-        test_end   = int(n * 0.2)
-        val_end    = int(n * 0.4)
-     
+        print("6: 60/20/20 split")
+        n        = len(data)
+        test_end = int(n * 0.2)
+        val_end  = int(n * 0.4)
+
         test_idx  = rand_shuffle[:test_end]
         val_idx   = rand_shuffle[test_end:val_end]
         train_idx = rand_shuffle[val_end:]
@@ -260,29 +234,22 @@ def split_train_val_test(split_later=False):
         test_lens  = event_lens[test_idx]
         val_lens   = event_lens[val_idx]
         train_lens = event_lens[train_idx]
-     
+
         print(f'[split] train {train.shape}  val {val.shape}  test {test.shape}')
-     
-        base = DATA_PATH + OUT_PREFIX
+
         np.save(base + '_train.npy', train)
         np.save(base + '_val.npy',   val)
         np.save(base + '_test.npy',  test)
         np.save(base + '_train_lens.npy', train_lens)
         np.save(base + '_val_lens.npy',   val_lens)
         np.save(base + '_test_lens.npy',  test_lens)
-     
-        # constant feature / label files for val & test (used directly by training_pipeline)
-        np.save(base + '_val_features.npy',  val[:, :, :4])
-        np.save(base + '_val_labels.npy',    val[:, 0,  4])
-        np.save(base + '_test_features.npy', test[:, :, :4])
-        np.save(base + '_test_labels.npy',   test[:, 0,  4])
-     
+
         assert np.sum(np.isnan(train)) == 0, 'NaNs in train'
         assert np.sum(np.isnan(val))   == 0, 'NaNs in val'
         assert np.sum(np.isnan(test))  == 0, 'NaNs in test'
-     # If you want training and val data size to change, and test to remain constant.
+
     else:
-        print("7: 80/20 split")
+        print("6: 80/20 split")
         n        = len(data)
         test_end = int(n * 0.2)
 
@@ -297,39 +264,125 @@ def split_train_val_test(split_later=False):
 
         print(f'[split] trainval {trainval.shape}  test {test.shape}')
 
-        base = DATA_PATH + OUT_PREFIX
-        np.save(base + '_trainval.npy',          trainval)
-        np.save(base + '_test.npy',              test)
-        np.save(base + '_trainval_lens.npy',     trainval_lens)
-        np.save(base + '_test_lens.npy',         test_lens)
-
-        # flat feature / label files
-        np.save(base + '_trainval_features.npy', trainval[:, :, :4])
-        np.save(base + '_trainval_labels.npy',   trainval[:, 0,  4])
-        np.save(base + '_testlate_features.npy',     test[:, :, :4])
-        np.save(base + '_testlate_labels.npy',       test[:, 0,  4])
+        np.save(base + '_trainval.npy',      trainval)
+        np.save(base + '_test.npy',          test)
+        np.save(base + '_trainval_lens.npy', trainval_lens)
+        np.save(base + '_test_lens.npy',     test_lens)
 
         assert np.sum(np.isnan(trainval)) == 0, 'NaNs in trainval'
         assert np.sum(np.isnan(test))     == 0, 'NaNs in test'
-        
 
+
+# 7 – scale features using TRAINING statistics only
+def _fit_scale_params(data, event_lens):
+    """Compute per-column min/max from real (non-padded) points."""
+    params = {}
+    for col in range(3):
+        all_real = np.concatenate(
+            [data[i, :event_lens[i], col] for i in range(len(data))]
+        )
+        params[col] = (all_real.min(), all_real.max())
+    return params
+
+
+def _apply_scaling(data, event_lens, params):
+    """Apply pre-computed min-max scaling in-place. Padding stays zero."""
+    for col in range(3):
+        min_val, max_val = params[col]
+        for i in range(len(data)):
+            n = event_lens[i]
+            data[i, :n, col] = (data[i, :n, col] - min_val) / (max_val - min_val)
+    return data
+
+
+def scale_splits(split_later=False):
+    """
+    Min-max scale x, y, z to [0,1] using statistics fit on the training
+    set only, then applied to val and test.  q is left unscaled.
+    Label column [:, 0, 4] is left untouched.
+
+    Saves scaled splits and convenience feature/label files.
+    """
+    base = DATA_PATH + OUT_PREFIX
+
+    if not split_later:
+        train      = np.load(base + '_train.npy')
+        val        = np.load(base + '_val.npy')
+        test       = np.load(base + '_test.npy')
+        train_lens = np.load(base + '_train_lens.npy')
+        val_lens   = np.load(base + '_val_lens.npy')
+        test_lens  = np.load(base + '_test_lens.npy')
+
+        # fit on train only
+        params = _fit_scale_params(train, train_lens)
+
+        train = _apply_scaling(train, train_lens, params)
+        val   = _apply_scaling(val,   val_lens,   params)
+        test  = _apply_scaling(test,  test_lens,  params)
+
+        for name, arr in [('train', train), ('val', val), ('test', test)]:
+            assert np.sum(np.isnan(arr)) == 0, f'NaNs in {name} after scaling'
+            assert np.sum(np.isinf(arr)) == 0, f'Infs in {name} after scaling'
+
+        np.save(base + '_train.npy', train)
+        np.save(base + '_val.npy',   val)
+        np.save(base + '_test.npy',  test)
+
+        # convenience feature / label files for val & test
+        np.save(base + '_val_features.npy',  val[:, :, :4])
+        np.save(base + '_val_labels.npy',    val[:, 0,  4])
+        np.save(base + '_test_features.npy', test[:, :, :4])
+        np.save(base + '_test_labels.npy',   test[:, 0,  4])
+
+        print('[scale_splits] scaled with train-only stats (60/20/20)')
+
+    else:
+        trainval      = np.load(base + '_trainval.npy')
+        test          = np.load(base + '_test.npy')
+        trainval_lens = np.load(base + '_trainval_lens.npy')
+        test_lens     = np.load(base + '_test_lens.npy')
+
+        # fit on trainval only
+        params = _fit_scale_params(trainval, trainval_lens)
+
+        trainval = _apply_scaling(trainval, trainval_lens, params)
+        test     = _apply_scaling(test,     test_lens,     params)
+
+        for name, arr in [('trainval', trainval), ('test', test)]:
+            assert np.sum(np.isnan(arr)) == 0, f'NaNs in {name} after scaling'
+            assert np.sum(np.isinf(arr)) == 0, f'Infs in {name} after scaling'
+
+        np.save(base + '_trainval.npy',          trainval)
+        np.save(base + '_test.npy',              test)
+
+        np.save(base + '_trainval_features.npy', trainval[:, :, :4])
+        np.save(base + '_trainval_labels.npy',   trainval[:, 0,  4])
+        np.save(base + '_testlate_features.npy', test[:, :, :4])
+        np.save(base + '_testlate_labels.npy',   test[:, 0,  4])
+
+        print('[scale_splits] scaled with trainval-only stats (80/20)')
+
+
+# 8 – generate trial subsets from the (now scaled) training pool
 def generate_trials(split_later=False):
     """
     For each training size:
         - randomly draw N events from the training pool (without replacement)
-        - save features [N, max_len, 4], labels [N], and lengths [N] as separate .npy files
-        - repeat for each 10 trials per data size
- 
+        - save features [N, max_len, 4], labels [N], and lengths [N]
+        - repeat for 10 trials per data size
+
     Output folders (inside DATA_PATH):
-        O16_UNSAMPLED_train_features/trial_k.npy
-        O16_UNSAMPLED_train_labels/trial_k.npy
+        O16_UNSAMPLED_{N}train_features/trial_k.npy
+        O16_UNSAMPLED_{N}train_labels/trial_k.npy
+        O16_UNSAMPLED_{N}train_lens/trial_k.npy
     """
     if split_later:
-        train = np.load(DATA_PATH + OUT_PREFIX + '_trainval.npy')
+        train      = np.load(DATA_PATH + OUT_PREFIX + '_trainval.npy')
         train_lens = np.load(DATA_PATH + OUT_PREFIX + '_trainval_lens.npy')
     else:
-        train = np.load(DATA_PATH + OUT_PREFIX + '_train.npy')
+        train      = np.load(DATA_PATH + OUT_PREFIX + '_train.npy')
         train_lens = np.load(DATA_PATH + OUT_PREFIX + '_train_lens.npy')
+
     n_train = len(train)
     print(f'[generate_trials] training pool size: {n_train}')
 
@@ -351,21 +404,21 @@ def generate_trials(split_later=False):
             features = subset[:, :, :4]
             labels   = subset[:, 0,  4].astype(int)
             lengths  = train_lens[chosen]
-    
+
             np.save(feat_dir  + f'trial_{k}.npy', features)
             np.save(label_dir + f'trial_{k}.npy', labels)
             np.save(lens_dir  + f'trial_{k}.npy', lengths)
 
         print(f'  N={N:4d}  trials={TRIALS}  feat shape={features.shape}')
-    
+
     print('[generate_trials] done.')
 
+
+# main
 def main():
     os.makedirs(DATA_PATH, exist_ok=True)
 
-    # One-time conversion. This is skipped by default to avoid accidentally
-    # overwriting/rebuilding the large raw O16_w_event_keys.npy file.
-    raw_path = DATA_PATH + ISOTOPE + '_w_event_keys.npy'
+    raw_path  = DATA_PATH + ISOTOPE + '_w_event_keys.npy'
     lens_path = DATA_PATH + ISOTOPE + '_event_lens.npy'
     if RUN_CONVERT or not (os.path.exists(raw_path) and os.path.exists(lens_path)):
         print("1: convert h5 to npy")
@@ -380,28 +433,24 @@ def main():
     print("3: simplify class label")
     simplify_class()
 
-    print("4: columns reformated to a 5 column array")
+    print("4: columns reformatted to a 5 column array")
     reformat_columns()
 
-    print("5: scale features")
-    scale_data()
-
-    
-    
-    # run every time (or when you need fresh splits / trials)
-
-    # If validation and training will be split later, set split_later = True for both following functions
-    # Split_later must be true if you would prefer a changing training and validation set, and a constant test set
-    # Send this as split_train_val_test(split_later=False) and generate_trials(split_later=False)
-    
-    # number 6
+    # ---- 5: split BEFORE scaling ----
+    # If validation and training will be split later, set split_later=True
+    # for split_train_val_test, scale_splits, AND generate_trials.
+    print("5: split into train / val / test")
     split_train_val_test()
-    
+
+    # ---- 6: scale using train-only statistics ----
+    print("6: scale features (fit on train only)")
+    scale_splits()
+
     print("7: generate trial files")
     generate_trials()
- 
+
     print("Pipeline complete")
- 
+
 
 if __name__ == '__main__':
-    main()  
+    main()

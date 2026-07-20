@@ -12,3 +12,4 @@ legacy_results/
 embeddings/
 linear_probe_results/
 .ipynb_checkpoints/
+src/evaluation/global_feature_exploration.ipynb

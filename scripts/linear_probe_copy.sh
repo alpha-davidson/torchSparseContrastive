@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name "O16_LINEAR_PROBE"
 #SBATCH --mem 32G
-#SBATCH --output=logs/probe_copy_%j.log
+#SBATCH --output=logs/linear_probe_copy_%j.log
 
 source activate contrastive
 export PYTHONNOUSERSITE=1

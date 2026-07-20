@@ -15,24 +15,24 @@ export PYTHONNOUSERSITE=1
 
 cd /home/DAVIDSON/tomallenntiador/torchSparseContrastive
 
-# --- Checkpoint / output ---
+# Checkpoint / output 
 CHECKPOINT="checkpoints/best.pt"
 CONFIG="checkpoints/run_config.json"
 OUTPUT_DIR="embeddings/O16_simclr_best"
 
-# --- Extraction mode ---
+# Extraction mode 
 # Use split mode for labeled latent vectors after O16_downstream(no_resample).py
 # creates data/O16_UNSAMPLED_{train,val,test}.npy and matching _lens.npy files.
 # Set USE_SPLITS=0 to extract from raw O16_w_event_keys.npy with labels=-1.
 USE_SPLITS=1
 SPLIT_DIR="data"
 
-# --- Raw-mode paths ---
+# Raw-mode paths 
 DATA="data/O16_w_event_keys.npy"
 LENS="data/O16_event_lens.npy"
 MIN_HITS=10
 
-# --- Runtime overrides ---
+# Runtime overrides
 # Empty values fall back to checkpoints/run_config.json or extract_latents.py defaults.
 BATCH_SIZE=""
 NUM_WORKERS=0
