@@ -29,7 +29,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits import mplot3d
 import tqdm
 
-data = h5py.File('data/O16_run160.h5','r')
+data = h5py.File('data/O16_run0160.h5','r')
 keys = list(data.keys())
 
 #making array of event lengths

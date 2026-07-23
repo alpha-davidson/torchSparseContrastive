@@ -1,8 +1,8 @@
 #!/bin/bash
-#SBATCH --job-name "O16_LATENTS"
+#SBATCH --job-name "O16_LATENTS_NO_RESAMPLE"
 #SBATCH --mem 32G
 #SBATCH --gpus rtx_a6000:1
-#SBATCH --output=logs/extract_latents_%j.log
+#SBATCH --output=logs/extract_latents_no_resample_%j.log
 
 source activate contrastive
 
@@ -15,25 +15,24 @@ export PYTHONNOUSERSITE=1
 
 cd /home/DAVIDSON/tomallenntiador/torchSparseContrastive
 
-# --- Checkpoint / output ---
+# Checkpoint / output 
 CHECKPOINT="checkpoints/best.pt"
 CONFIG="checkpoints/run_config.json"
 OUTPUT_DIR="embeddings/O16_simclr_best"
 
-# --- Extraction mode ---
-# Use split mode for labeled latent vectors after O16_downstream_pipeline.py
-# creates data/O16_size512_{train,val,test}.npy.
+# Extraction mode 
+# Use split mode for labeled latent vectors after O16_downstream(no_resample).py
+# creates data/O16_UNSAMPLED_{train,val,test}.npy and matching _lens.npy files.
 # Set USE_SPLITS=0 to extract from raw O16_w_event_keys.npy with labels=-1.
 USE_SPLITS=1
 SPLIT_DIR="data"
-SAMPLE_SIZE=512
 
-# --- Raw-mode paths ---
+# Raw-mode paths 
 DATA="data/O16_w_event_keys.npy"
 LENS="data/O16_event_lens.npy"
 MIN_HITS=10
 
-# --- Runtime overrides ---
+# Runtime overrides
 # Empty values fall back to checkpoints/run_config.json or extract_latents.py defaults.
 BATCH_SIZE=""
 NUM_WORKERS=0
@@ -41,16 +40,16 @@ VOXEL_SIZE=""
 HASH_RSV_RATIO=8
 
 mkdir -p logs "$OUTPUT_DIR"
-LOG="logs/extract_latents_$(date +%Y%m%d_%H%M%S).log"
+LOG="logs/extract_latents_no_resample_$(date +%Y%m%d_%H%M%S).log"
 
 MODE_ARGS=()
 if [[ "$USE_SPLITS" == "1" ]]; then
-    MODE_ARGS+=(--split-dir "$SPLIT_DIR" --sample-size "$SAMPLE_SIZE")
+    MODE_ARGS+=(--split-dir "$SPLIT_DIR")
 else
     MODE_ARGS+=(--no-splits --data "$DATA" --lens "$LENS" --min-hits "$MIN_HITS")
 fi
 
-python -u -m src.evaluation.extract_latents \
+python -u -m src.evaluation.extract_latents_legacy \
     --checkpoint       "$CHECKPOINT" \
     --config           "$CONFIG" \
     --output-dir       "$OUTPUT_DIR" \

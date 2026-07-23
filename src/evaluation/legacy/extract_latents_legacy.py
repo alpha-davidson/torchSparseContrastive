@@ -71,8 +71,11 @@ class _O16SplitDataset(Dataset):
     Uses the companion _lens.npy file to strip zero-padding exactly,
     rather than relying on nonzero heuristics.
 
-    The split files already contain normalized XYZ and amplitude values.
-    They are voxelized directly without applying normalization a second time.
+    Applies the same per-event normalisation as O16Dataset (training
+    preprocessing) so features are consistent with what the backbone saw
+    during training:
+        xyz  — per-event min-max to [0, 1]
+        q    — per-event min-max to [0, 1]
     """
 
     def __init__(self, data_path: Path, lens_path: Path, voxel_size: float):
@@ -96,28 +99,25 @@ class _O16SplitDataset(Dataset):
         return len(self.labels)
 
     def __getitem__(self, i):
-        n   = int(self.event_lens[i])
-        if n <= 0 or n > self.events.shape[1]:
-            raise ValueError(
-                f"Invalid event length at index {i}: {n}; "
-                f"expected a value in [1, {self.events.shape[1]}]"
-            )
+        n   = self.event_lens[i]
         pts = self.events[i, :n]                 # (n, 4) — real points only
 
         xyz = pts[:, :3].astype(np.float32)
         q   = pts[:, 3:4].astype(np.float32)
 
-        # Match O16Dataset._to_sparse. The values are already normalized, but
-        # each event is translated to start at coordinate zero before quantizing.
-        xyz = xyz - xyz.min(axis=0, keepdims=True)
+        # per-event normalise xyz to [0, 1]  (matches O16Dataset._load_event)
+        lo  = xyz.min(axis=0, keepdims=True)
+        hi  = xyz.max(axis=0, keepdims=True)
+        rng = np.where((hi - lo) > 0, hi - lo, 1.0)
+        xyz = (xyz - lo) / rng
+
+        # per-event normalise amplitude to [0, 1]
+        q_lo, q_hi = float(q.min()), float(q.max())
+        q = (q - q_lo) / max(q_hi - q_lo, 1e-6)
+
         coords_q, idx = self._sparse_quantize(
             xyz, voxel_size=self.voxel_size, return_index=True
         )
-        if len(coords_q) == 0:
-            raise ValueError(
-                f"Voxelization produced no coordinates for event index {i} "
-                f"with {n} input hits"
-            )
         sparse = self._SparseTensor(
             feats=torch.tensor(q[idx],    dtype=torch.float32),
             coords=torch.tensor(coords_q, dtype=torch.int32),
@@ -192,35 +192,10 @@ def resolve_args(args: argparse.Namespace) -> argparse.Namespace:
                     "proj_out_dim", "proj_hidden_dim", "temperature", "final_bn"]:
             if getattr(args, key) is None and key in cfg:
                 setattr(args, key, cfg[key])
-        # Split mode reads labeled downstream files, so the pretraining
-        # data/lens config entries are irrelevant. Combined training configs
-        # store those entries as lists rather than single paths.
-        if args.no_splits:
-            if args.data is None and "data" in cfg:
-                config_data = cfg["data"]
-                if isinstance(config_data, list):
-                    if len(config_data) == 1:
-                        config_data = config_data[0]
-                    else:
-                        raise ValueError(
-                            "The training config contains multiple data files. "
-                            "Raw extraction supports one file at a time; pass "
-                            "--data and --lens explicitly, or use split mode."
-                        )
-                args.data = Path(config_data)
-
-            if args.lens is None and "lens" in cfg:
-                config_lens = cfg["lens"]
-                if isinstance(config_lens, list):
-                    if len(config_lens) == 1:
-                        config_lens = config_lens[0]
-                    else:
-                        raise ValueError(
-                            "The training config contains multiple lens files. "
-                            "Raw extraction supports one file at a time; pass "
-                            "--data and --lens explicitly, or use split mode."
-                        )
-                args.lens = Path(config_lens)
+        if args.data is None and "data" in cfg:
+            args.data = Path(cfg["data"])
+        if args.lens is None and "lens" in cfg:
+            args.lens = Path(cfg["lens"])
     else:
         print(f"No run_config.json at {config_path} — relying on CLI args / defaults.")
 
@@ -347,7 +322,6 @@ def main() -> None:
     print(f"\nLoading checkpoint: {args.checkpoint}")
     ckpt = torch.load(args.checkpoint, map_location="cpu", weights_only=False)
     model.load_state_dict(ckpt["model_state"])
-    model.eval()
     print(f"  Loaded weights from epoch {ckpt.get('epoch', '?')}")
 
     print("\nExtracting latent vectors...")

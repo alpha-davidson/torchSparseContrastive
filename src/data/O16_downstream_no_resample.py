@@ -1,15 +1,16 @@
 """
 name: O16_downstream(no_resample).py
 
-Using the O16 dataset for downstream tasks without resampling. To evaluate 
-the model's performance on this dataset, we will use the original distribution 
+Using the O16 dataset for downstream tasks without resampling. To evaluate
+the model's performance on this dataset, we will use the original distribution
 of samples without any resampling techniques.
 
-July 20th: Scaling error fixes applied to the file =), orignally scaled then
-split, now split then scale
+July 20th: Scaling error fixes applied to the file =), originally scaled then
+split, now split then scale.  Now uses shared detector RANGES dict and
+log-scaled amplitude to match pretraining and other lab pipelines.
 
 Date created: Jul 13, 2026 (Tony Mallen-Ntiador)
-Last Edited: Jul 2026 (Tony Mallen-Ntiador)
+Last Edited: Jul 20, 2026 (Tony Mallen-Ntiador)
 
 """
 
@@ -31,6 +32,14 @@ TRIALS = 10
 # number of events in downstream tasks
 DATA_SIZES = [30, 45, 60, 90, 120, 150, 180, 210, 240, 270,
               300, 360, 420, 480, 570, 700, 830, 1000, 1200, 1400]
+
+# Known detector / feature ranges (shared across the lab)
+RANGES = {
+    'MIN_X': -270.0, 'MAX_X': 270.0,
+    'MIN_Y': -270.0, 'MAX_Y': 270.0,
+    'MIN_Z': -185.0, 'MAX_Z': 1155.0,
+    'MIN_LOG_A': 0.0, 'MAX_LOG_A': 10.80,
+}
 
 
 # 1 – make sure the data/label files exist
@@ -273,32 +282,31 @@ def split_train_val_test(split_later=False):
         assert np.sum(np.isnan(test))     == 0, 'NaNs in test'
 
 
-# 7 – scale features using TRAINING statistics only
-def _fit_scale_params(data, event_lens):
-    """Compute per-column min/max from real (non-padded) points."""
-    params = {}
-    for col in range(3):
-        all_real = np.concatenate(
-            [data[i, :event_lens[i], col] for i in range(len(data))]
-        )
-        params[col] = (all_real.min(), all_real.max())
-    return params
+# 7 – scale features using known detector ranges
+def _apply_range_scaling(data, event_lens):
+    """
+    Scale x, y, z and log(q) to [0,1] using known detector RANGES.
+    Operates in-place.  Padding stays zero.  Label col 4 is untouched.
+    """
+    xyz_min = np.array([RANGES['MIN_X'], RANGES['MIN_Y'], RANGES['MIN_Z']])
+    xyz_rng = np.array([RANGES['MAX_X'] - RANGES['MIN_X'],
+                        RANGES['MAX_Y'] - RANGES['MIN_Y'],
+                        RANGES['MAX_Z'] - RANGES['MIN_Z']])
+    logA_min = RANGES['MIN_LOG_A']
+    logA_rng = RANGES['MAX_LOG_A'] - RANGES['MIN_LOG_A']
 
+    for i in range(len(data)):
+        n = event_lens[i]
+        data[i, :n, :3] = (data[i, :n, :3] - xyz_min) / xyz_rng
+        raw_q = data[i, :n, 3]
+        data[i, :n, 3] = (np.log(np.clip(raw_q, a_min=1.0, a_max=None)) - logA_min) / logA_rng
 
-def _apply_scaling(data, event_lens, params):
-    """Apply pre-computed min-max scaling in-place. Padding stays zero."""
-    for col in range(3):
-        min_val, max_val = params[col]
-        for i in range(len(data)):
-            n = event_lens[i]
-            data[i, :n, col] = (data[i, :n, col] - min_val) / (max_val - min_val)
     return data
 
 
 def scale_splits(split_later=False):
     """
-    Min-max scale x, y, z to [0,1] using statistics fit on the training
-    set only, then applied to val and test.  q is left unscaled.
+    Scale x, y, z and log(q) to [0,1] using known detector RANGES.
     Label column [:, 0, 4] is left untouched.
 
     Saves scaled splits and convenience feature/label files.
@@ -313,12 +321,9 @@ def scale_splits(split_later=False):
         val_lens   = np.load(base + '_val_lens.npy')
         test_lens  = np.load(base + '_test_lens.npy')
 
-        # fit on train only
-        params = _fit_scale_params(train, train_lens)
-
-        train = _apply_scaling(train, train_lens, params)
-        val   = _apply_scaling(val,   val_lens,   params)
-        test  = _apply_scaling(test,  test_lens,  params)
+        train = _apply_range_scaling(train, train_lens)
+        val   = _apply_range_scaling(val,   val_lens)
+        test  = _apply_range_scaling(test,  test_lens)
 
         for name, arr in [('train', train), ('val', val), ('test', test)]:
             assert np.sum(np.isnan(arr)) == 0, f'NaNs in {name} after scaling'
@@ -334,7 +339,7 @@ def scale_splits(split_later=False):
         np.save(base + '_test_features.npy', test[:, :, :4])
         np.save(base + '_test_labels.npy',   test[:, 0,  4])
 
-        print('[scale_splits] scaled with train-only stats (60/20/20)')
+        print('[scale_splits] scaled with detector RANGES (60/20/20)')
 
     else:
         trainval      = np.load(base + '_trainval.npy')
@@ -342,11 +347,8 @@ def scale_splits(split_later=False):
         trainval_lens = np.load(base + '_trainval_lens.npy')
         test_lens     = np.load(base + '_test_lens.npy')
 
-        # fit on trainval only
-        params = _fit_scale_params(trainval, trainval_lens)
-
-        trainval = _apply_scaling(trainval, trainval_lens, params)
-        test     = _apply_scaling(test,     test_lens,     params)
+        trainval = _apply_range_scaling(trainval, trainval_lens)
+        test     = _apply_range_scaling(test,     test_lens)
 
         for name, arr in [('trainval', trainval), ('test', test)]:
             assert np.sum(np.isnan(arr)) == 0, f'NaNs in {name} after scaling'
@@ -357,10 +359,10 @@ def scale_splits(split_later=False):
 
         np.save(base + '_trainval_features.npy', trainval[:, :, :4])
         np.save(base + '_trainval_labels.npy',   trainval[:, 0,  4])
-        np.save(base + '_testlate_features.npy', test[:, :, :4])
-        np.save(base + '_testlate_labels.npy',   test[:, 0,  4])
+        np.save(base + '_test_features.npy',     test[:, :, :4])
+        np.save(base + '_test_labels.npy',       test[:, 0,  4])
 
-        print('[scale_splits] scaled with trainval-only stats (80/20)')
+        print('[scale_splits] scaled with detector RANGES (80/20)')
 
 
 # 8 – generate trial subsets from the (now scaled) training pool
@@ -442,8 +444,8 @@ def main():
     print("5: split into train / val / test")
     split_train_val_test()
 
-    # ---- 6: scale using train-only statistics ----
-    print("6: scale features (fit on train only)")
+    # ---- 6: scale using known detector ranges ----
+    print("6: scale features (detector RANGES)")
     scale_splits()
 
     print("7: generate trial files")

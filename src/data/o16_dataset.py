@@ -13,6 +13,12 @@ Column layout in O16_w_event_keys.npy  (axis-2):
 
 Produces two augmented SparseTensor views for SimCLR training.
 in_channels=1  (amplitude A)
+
+Latest change (July 20, 2026): Changed from per-event normalization to global
+normalization using Hakan detector ranges and log-scaled amplitude.
+
+Created: Julia Gelina (June 2026)
+Edited: T. Mallen-Ntiador (July 2026)
 """
 
 from __future__ import annotations
@@ -27,6 +33,16 @@ from src.utils.augmentations import (
     RandomPointDropout, RandomShift,
 )
 
+# ---------------------------------------------------------------------------
+# Known detector / feature ranges (shared across the lab)
+# ---------------------------------------------------------------------------
+
+RANGES = {
+    'MIN_X': -270.0, 'MAX_X': 270.0,
+    'MIN_Y': -270.0, 'MAX_Y': 270.0,
+    'MIN_Z': -185.0, 'MAX_Z': 1155.0,
+    'MIN_LOG_A': 0.0, 'MAX_LOG_A': 10.80,
+}
 
 # ---------------------------------------------------------------------------
 # Feature-aware augmentation helper
@@ -99,11 +115,19 @@ class O16Dataset(Dataset):
         self._valid_idx = np.where(lens_full >= min_hits)[0]   # indices into _raw
         self.lens       = lens_full[self._valid_idx]           # lengths for valid events
 
+        # Pre-compute scaling constants from known detector ranges
+        self._xyz_min   = np.array([RANGES['MIN_X'], RANGES['MIN_Y'], RANGES['MIN_Z']], dtype=np.float32)
+        self._xyz_range = np.array([RANGES['MAX_X'] - RANGES['MIN_X'],
+                                    RANGES['MAX_Y'] - RANGES['MIN_Y'],
+                                    RANGES['MAX_Z'] - RANGES['MIN_Z']], dtype=np.float32)
+        self._logA_min   = np.float32(RANGES['MIN_LOG_A'])
+        self._logA_range = np.float32(RANGES['MAX_LOG_A'] - RANGES['MIN_LOG_A'])
+
     def __len__(self):
         return len(self.lens)
 
     def _load_event(self, i: int):
-        """Return xyz (N,3) and amplitude feats (N,1), both normalised to [0,1]."""
+        """Return xyz (N,3) and log-amplitude feats (N,1), both normalised to [0,1]."""
         n     = self.lens[i]
         i_raw = self._valid_idx[i]
         ev    = self._raw[i_raw, :n]                # (n, 6) — reads one row from mmap
@@ -111,15 +135,12 @@ class O16Dataset(Dataset):
         xyz = ev[:, :3].astype(np.float32)
         A   = ev[:, 4:5].astype(np.float32)
 
-        # normalise xyz per-event to [0, 1]
-        lo  = xyz.min(axis=0, keepdims=True)
-        hi  = xyz.max(axis=0, keepdims=True)
-        rng = np.where((hi - lo) > 0, hi - lo, 1.0)
-        xyz = (xyz - lo) / rng
+        # normalise xyz using detector ranges
+        xyz = (xyz - self._xyz_min) / self._xyz_range
 
-        # normalise amplitude to [0, 1]
-        A_lo, A_hi = float(A.min()), float(A.max())
-        A = (A - A_lo) / max(A_hi - A_lo, 1e-6)
+        # log-scale amplitude, then normalise using known range
+        A = np.log(np.clip(A, a_min=1.0, a_max=None))
+        A = (A - self._logA_min) / self._logA_range
 
         return xyz, A
 

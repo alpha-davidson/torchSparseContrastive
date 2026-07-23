@@ -13,5 +13,5 @@ python -u src/evaluation/linear_probe.py \
     --name O16_simclr_best \
     --seed 0 \
     --max-train-size 1475 \
-    embeddings/O16_simclr_best/latent_vectors.npy \
-    embeddings/O16_simclr_best/labels.npy
+    embeddings/O16_combined_pretrain_best/latent_vectors.npy \
+    embeddings/O16_combined_pretrain_best/labels.npy

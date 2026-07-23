@@ -31,32 +31,30 @@ For a file-by-file explanation of `src/`, see [src/README.md](src/README.md).
 
 ---
 
-## Main O16 workflow
+## Main Workflow  
 ```
 Convert the h5 file, we need data ;/
-# run_convert_data.sh
+# run_convert_data.sh or run_convert_ar46.sh
         ↓
 Smoke test, actual dataloader call imported 
 in train_contrastive.py
-# run_O16_dataset.sh
+# run_O16_dataset.sh 
         ↓
 checkpoint exists
         ↓
 Train contrastive model
 # run_train_O16_contrastive.sh
         ↓
-Creates labeled downstream 512-point size for latent analysis
-# run_O16_downstream_pipeline.sh
+Creates labeled variable-point_size for latent analysis
+# run_O16_downstream_pipeline_no_resample.sh
         ↓
-labeled 512 split files exist
-
-checkpoint + labeled split files
+labeled split files exist (checkpoint + labeled split files)
         ↓
 Extract latents using checkpoints and labeled splits
-#  run_extract_latents.sh
+#  run_extract_latents_no_resample.sh
         ↓
 Probe and evaluation
-# linear_probe_copy.sh
+# run_linear_probe_copy.sh or run_rbf_probe.sh
         ↓
 PCA, T-SNE and UMAP from ATTPC Latent
 # global_feature_exploration

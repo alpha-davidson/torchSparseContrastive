@@ -12,16 +12,25 @@ src/
 ├── __init__.py
 ├── data/
 │   ├── __init__.py
-│   ├── O16_downstream_pipeline.py
-│   ├── convert-data.py
-│   ├── legacy_files/
+│   ├── O16_downstream_pipeline_no_resample.py (generate npy files)
+│   ├── convert-data.py (create O16 event lens and keys)
+│   ├── Ar46_convert.py (create 46Ar event lens and keys)
+│   ├── combined_dataset.py (create dataloader for multiple datsets used in train_contrastive)
+│   ├── o16_dataset.py (create o16 dataloader used in train_contrastive)
+│   ├── legacy/
 │   │   ├── __init__.py
+│   │   ├── O16_downstream_pipeline.py (original but resampled)
 │   │   └── contrastive_dataset.py
-│   └── o16_dataset.py
 ├── evaluation/
 │   ├── __init__.py
-│   ├── extract_latents.py
-│   └── linear_probe.py
+│   ├── extract_latents_no_resample.py (embeddings extraction without point resampling)
+│   ├── linear_probe.py (ATTPCLatent)
+│   ├── clustering.py (ATTPCLatent)
+│   ├── rbf_probe.py (adaptation of the linear probe to use an rbf kernel)
+│   ├── global_feature_exploration.ipynb (ATTPCLatent)
+│   ├── legacy/
+│   │   ├── extract_latents.py
+│   │   └── extract_latents_legacy.py
 ├── models/
 │   ├── __init__.py
 │   ├── model.py
@@ -62,8 +71,9 @@ data/O16_w_event_keys.npy
 ```text
 x, y, z, time_bucket, amplitude, event_index
 ```
+`Ar46_convert` does the same but for Ar46.
 
-### `src/data/O16_downstream_pipeline.py`
+### `src/data/O16_downstream_pipeline_no_resample.py`
 
 Full labeled downstream-data preparation pipeline.
 
@@ -72,20 +82,18 @@ Main steps:
 1. Convert raw HDF5 to numpy arrays.
 2. Attach event-level track-count labels from `data/O16_labels.csv`.
 3. Simplify raw track counts into 3 classes.
-4. Resample each event to 512 hits.
+4. Create train/val/test split files.
 5. Scale features.
-6. Create train/val/test split files.
-7. Generate small-train-size trial files for downstream benchmark studies.
+6. Generate small-train-size trial files for downstream benchmark studies.
 
 Primary outputs include:
 
 ```text
 data/O16_dataset.npy
-data/O16_size512_sampled.npy
-data/O16_size512_scaled.npy
-data/O16_size512_train.npy
-data/O16_size512_val.npy
-data/O16_size512_test.npy
+data/O16_UNSAMPLED_scaled.npy
+data/O16_UNSAMPLED_train.npy
+data/O16_UNSAMPLED_val.npy
+data/O16_UNSAMPLED_test.npy
 ```
 
 ### `src/data/o16_dataset.py`
@@ -102,6 +110,8 @@ Important objects:
 | `_augment()` | Applies spatial transforms while carrying amplitude features along. |
 | `collate_o16_batch()` | Sparse-collates `view_a`, `view_b`, and `original`. |
 | `make_o16_dataloader()` | Convenience `DataLoader` factory for training. |
+
+`combined_dataset.py` does the same but unless pretraining on multiple datasets
 
 This is the dataset used by `src/training/train_contrastive.py`.
 
@@ -199,7 +209,7 @@ Recommended invocation:
 python -u -m src.training.train_contrastive \
   --data data/O16_w_event_keys.npy \
   --lens data/O16_event_lens.npy \
-  --voxel-size 0.025 \
+  --voxel-size 0.00390625 \ # 1/256
   --hash-rsv-ratio 8 \
   --in-channels 1
 ```
@@ -228,7 +238,7 @@ confirmed stable. For now, treat `src/models/model.py` as canonical.
 
 ## `src/evaluation/`
 
-### `src/evaluation/extract_latents.py`
+### `src/evaluation/extract_latents_no_resample.py`
 
 Loads a trained SparseSimCLR checkpoint and extracts one latent vector per
 event.
@@ -237,7 +247,7 @@ Modes:
 
 | Mode | Description |
 |---|---|
-| Split mode | Uses `data/O16_size512_{train,val,test}.npy`; saves aligned labels. Recommended for linear probing. |
+| Split mode | Uses `data/O16_UNSAMPLED_{train,val,test}.npy`; saves aligned labels. Recommended for linear probing. |
 | Raw mode | Uses `data/O16_w_event_keys.npy`; labels are `-1` placeholders. |
 
 Outputs:
@@ -293,13 +303,13 @@ sbatch scripts/linear_probe_copy.sh
 Use these going forward:
 
 ```text
-src/data/o16_dataset.py
-src/data/O16_downstream_pipeline.py
-src/data/convert-data.py
+src/data/o16_dataset.py or src/data/combined_dataset.py
+src/data/O16_downstream_pipeline_no_resample.py
+src/data/convert-data.py or src/data/Ar46_convert.py
 src/models/model.py
 src/models/sparse_simclr.py
 src/training/train_contrastive.py
-src/evaluation/extract_latents.py
+src/evaluation/extract_latents_no_resample.py
 src/evaluation/linear_probe.py
 src/utils/augmentations.py
 ```
