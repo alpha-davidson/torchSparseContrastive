@@ -9,4 +9,4 @@ cd /home/DAVIDSON/tomallenntiador/torchSparseContrastive
 
 mkdir -p logs data
 
-python -u -m src.data.O16_downstream_no_resample
+python -u -m src.data.downstream_data_loader.O16_downstream_no_resample

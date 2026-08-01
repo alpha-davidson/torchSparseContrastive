@@ -21,7 +21,7 @@ CONFIG="checkpoints/run_config.json"
 OUTPUT_DIR="embeddings/O16_simclr_best"
 
 # Extraction mode 
-# Use split mode for labeled latent vectors after O16_downstream(no_resample).py
+# Use split mode after the variable-length O16 downstream builder
 # creates data/O16_UNSAMPLED_{train,val,test}.npy and matching _lens.npy files.
 # Set USE_SPLITS=0 to extract from raw O16_w_event_keys.npy with labels=-1.
 USE_SPLITS=1
@@ -49,7 +49,7 @@ else
     MODE_ARGS+=(--no-splits --data "$DATA" --lens "$LENS" --min-hits "$MIN_HITS")
 fi
 
-python -u -m src.evaluation.extract_latents_legacy \
+python -u -m src.evaluation.legacy.extract_latents_legacy \
     --checkpoint       "$CHECKPOINT" \
     --config           "$CONFIG" \
     --output-dir       "$OUTPUT_DIR" \

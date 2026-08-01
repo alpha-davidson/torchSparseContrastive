@@ -14,11 +14,11 @@ export PYTHONNOUSERSITE=1
 
 cd /home/DAVIDSON/tomallenntiador/torchSparseContrastive
 
-# Combined-pretraining checkpoint; downstream extraction still uses the fixed,
-# labeled O16 split files for an apples-to-apples linear-probe comparison.
-CHECKPOINT="checkpoints/combined/best.pt"
-CONFIG="checkpoints/combined/run_config.json"
-OUTPUT_DIR="embeddings/O16_combined_pretrain_best"
+# Combined-pretraining checkpoint; downstream extraction uses the canonical
+# labeled variable-length O16 splits for an apples-to-apples probe comparison.
+CHECKPOINT="checkpoints/combined_o16_ar46_c16_mg22/best.pt"
+CONFIG="checkpoints/combined_o16_ar46_c16_mg22/run_config.json"
+OUTPUT_DIR="embeddings/O16_combined_ar46_c16_mg22"
 
 USE_SPLITS=1
 SPLIT_DIR="data"

@@ -7,13 +7,10 @@ The original files remain separate on disk. To the training loop they appear
 as one continuous dataset; no combined .npy file is created in memory or on
 disk. Each event is read on demand using numpy memory mapping.
 
-Column layout in each *_w_event_keys.npy file (axis 2):
-    0  x       mm
-    1  y       mm
-    2  z       mm
-    3  t       time bucket
-    4  A       amplitude (charge)
-    5  event_idx
+The source formats are not identical, so each dataset has an explicit feature
+column:
+    O16/Mg22:  0 x, 1 y, 2 z, 3 time,   4 amplitude, 5 event_idx
+    Ar46/C16:  0 x, 1 y, 2 z, 3 charge, 4 auxiliary, 5 event_idx
 """
 
 from __future__ import annotations
@@ -33,15 +30,27 @@ from src.utils.augmentations import (
 )
 
 
-# Replace these four paths with the real file locations.
+# Replace these paths with the real file locations.
 DATASETS = {
     "O16": {
         "data_path": "data/O16_w_event_keys.npy",
         "lens_path": "data/O16_event_lens.npy",
+        "feature_col": 4,
     },
     "Ar46": {
         "data_path": "data/Ar46_w_event_keys.npy",
         "lens_path": "data/Ar46_event_lens.npy",
+        "feature_col": 3,
+    },
+    "C16": {
+        "data_path": "data/C16_w_event_keys.npy",
+        "lens_path": "data/C16_event_lens.npy",
+        "feature_col": 3,
+    },
+    "Mg22": {
+        "data_path": "data/Mg22_w_event_keys.npy",
+        "lens_path": "data/Mg22_event_lens.npy",
+        "feature_col": 4,
     },
 }
 
@@ -55,6 +64,21 @@ RANGES = {
     "MIN_LOG_A": 0.0,
     "MAX_LOG_A": 10.80,
 }
+
+
+def _resolve_feature_col(name: str, paths: dict) -> int:
+    """Resolve the charge/amplitude column, with safe isotope defaults."""
+    if "feature_col" in paths:
+        return int(paths["feature_col"])
+
+    defaults = {"o16": 4, "ar46": 3, "c16": 3, "mg22": 4}
+    normalized_name = name.lower()
+    if normalized_name not in defaults:
+        raise KeyError(
+            f"{name} does not specify feature_col and has no known default. "
+            "Set feature_col to the charge/amplitude column index."
+        )
+    return defaults[normalized_name]
 
 
 def _augment(transforms: list, xyz: np.ndarray, feats: np.ndarray):
@@ -89,7 +113,7 @@ class CombinedATTPC(Dataset):
 
     Parameters
     ----------
-    datasets : mapping of dataset names to data_path/lens_path mappings
+    datasets : mapping of names to data_path/lens_path/feature_col mappings
     voxel_size : voxelization resolution in normalized [0, 1] coordinates
     min_hits : skip events with fewer hits than this
     aug_list : augmentation transforms; defaults to attpc_aug_list()
@@ -115,6 +139,7 @@ class CombinedATTPC(Dataset):
 
         self._names = []
         self._raw = []
+        self._feature_cols = []
         self._valid_idx = []
         valid_lens = []
         valid_counts = []
@@ -126,10 +151,17 @@ class CombinedATTPC(Dataset):
 
             raw = np.load(paths["data_path"], mmap_mode="r")
             lens_full = np.load(paths["lens_path"])
+            feature_col = _resolve_feature_col(name, paths)
 
-            if raw.ndim != 3 or raw.shape[2] < 5:
+            if raw.ndim != 3 or raw.shape[2] < 4:
                 raise ValueError(
-                    f"{name} data must have shape (events, hits, >=5); got {raw.shape}"
+                    f"{name} data must have shape (events, hits, features); "
+                    f"got {raw.shape}"
+                )
+            if feature_col < 0 or feature_col >= raw.shape[2]:
+                raise ValueError(
+                    f"{name} feature_col={feature_col} is outside its "
+                    f"{raw.shape[2]} data columns"
                 )
             if lens_full.ndim != 1 or len(raw) != len(lens_full):
                 raise ValueError(
@@ -143,6 +175,7 @@ class CombinedATTPC(Dataset):
             valid_idx = np.flatnonzero(lens_full >= min_hits)
             self._names.append(name)
             self._raw.append(raw)
+            self._feature_cols.append(feature_col)
             self._valid_idx.append(valid_idx)
             valid_lens.append(lens_full[valid_idx].astype(np.int64, copy=False))
             valid_counts.append(len(valid_idx))
@@ -189,7 +222,8 @@ class CombinedATTPC(Dataset):
         event = self._raw[source_i][raw_i, :n_hits]
 
         xyz = event[:, :3].astype(np.float32)
-        amplitude = event[:, 4:5].astype(np.float32)
+        feature_col = self._feature_cols[source_i]
+        amplitude = event[:, feature_col : feature_col + 1].astype(np.float32)
         xyz = (xyz - self._xyz_min) / self._xyz_range
         amplitude = np.log(np.clip(amplitude, a_min=1.0, a_max=None))
         amplitude = (amplitude - self._log_a_min) / self._log_a_range

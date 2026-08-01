@@ -9,7 +9,7 @@ export MPLCONFIGDIR="/tmp/matplotlib-${SLURM_JOB_ID:-manual}"
 
 cd /home/DAVIDSON/tomallenntiador/torchSparseContrastive
 
-python -u src/evaluation/rbf_probe.py \
+python -u -m src.evaluation.probing_files.rbf_probe \
     --name O16_simclr_best \
     --seed 0 \
     --c 1.0 \
@@ -19,5 +19,5 @@ python -u src/evaluation/rbf_probe.py \
     --max-train-size 1475 \
     --num-size-points 20 \
     --cv-folds 3 \
-    embeddings/O16_simclr_best/latent_vectors.npy \
-    embeddings/O16_simclr_best/labels.npy
+    embeddings/O16_combined_ar46_c16_mg22/latent_vectors.npy \
+    embeddings/O16_combined_ar46_c16_mg22/labels.npy

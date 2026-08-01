@@ -13,7 +13,7 @@ Two extraction modes
 --------------------
 1. Split mode (default, recommended):
    Loads from the pre-split .npy files produced by
-   O16_downstream(no_resample).py:
+   src/data/downstream_data_loader/O16_downstream_no_resample.py:
        O16_UNSAMPLED_{train,val,test}.npy     — shape (N, max_len, 5)
        O16_UNSAMPLED_{train,val,test}_lens.npy — true point counts per event
    Labels are embedded at [:, 0, 4]; event lengths let us strip padding
@@ -53,11 +53,11 @@ import numpy as np
 import torch
 from torch.utils.data import DataLoader, Dataset
 
-from src.data.o16_dataset import O16Dataset
+from src.data.dataset_loaders.o16_dataset import O16Dataset
 from src.models.sparse_simclr import sparse_simclr_21d, SparseSimCLR
 
 
-# Constants — must match O16_downstream(no_resample).py
+# Constants — must match O16_downstream_no_resample.py
 OUT_PREFIX = "O16_UNSAMPLED"
 
 
@@ -66,7 +66,7 @@ OUT_PREFIX = "O16_UNSAMPLED"
 class _O16SplitDataset(Dataset):
     """
     Load one pre-split O16 .npy file (shape N, max_len, 5) produced by
-    O16_downstream(no_resample).py and voxelise each event for inference.
+    O16_downstream_no_resample.py and voxelise each event for inference.
 
     Uses the companion _lens.npy file to strip zero-padding exactly,
     rather than relying on nonzero heuristics.
@@ -259,7 +259,7 @@ def extract_from_splits(
         if not lens_path.exists():
             raise FileNotFoundError(
                 f"Found {data_path} but missing companion lengths file "
-                f"{lens_path}.\nRe-run O16_downstream(no_resample).py."
+                f"{lens_path}.\nRe-run O16_downstream_no_resample.py."
             )
 
         ds     = _O16SplitDataset(data_path, lens_path, voxel_size)
@@ -277,7 +277,7 @@ def extract_from_splits(
         raise FileNotFoundError(
             f"No split files found in {split_dir} matching "
             f"{OUT_PREFIX}_{{train,val,test}}.npy.\n"
-            f"Run O16_downstream(no_resample).py first, or use --no-splits."
+            f"Run O16_downstream_no_resample.py first, or use --no-splits."
         )
 
     return np.concatenate(all_feats), np.concatenate(all_labels)

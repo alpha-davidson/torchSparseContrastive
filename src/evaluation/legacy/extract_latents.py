@@ -50,7 +50,7 @@ import numpy as np
 import torch
 from torch.utils.data import DataLoader, Dataset
 
-from src.data.o16_dataset import O16Dataset
+from src.data.dataset_loaders.o16_dataset import O16Dataset
 from src.models.sparse_simclr import sparse_simclr_21d, SparseSimCLR
 
 

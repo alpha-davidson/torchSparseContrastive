@@ -1,5 +1,5 @@
 """
-name: O16_downstream(no_resample).py
+name: O16_downstream_no_resample.py
 
 Using the O16 dataset for downstream tasks without resampling. To evaluate
 the model's performance on this dataset, we will use the original distribution

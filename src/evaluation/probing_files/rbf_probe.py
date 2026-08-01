@@ -203,7 +203,7 @@ def create_final_model_visualizations(
     report_df.to_csv(
         os.path.join(
             results_folder,
-            "classification_report.csv",
+            "rbf_classification_report.csv",
         )
     )
 
@@ -224,7 +224,7 @@ def create_final_model_visualizations(
     table.scale(1.2, 1.5)
 
     plt.title(
-        "Classification Report",
+        "RBF SVC Classification Report",
         fontsize=14,
         fontweight="bold",
         pad=15,
@@ -233,7 +233,7 @@ def create_final_model_visualizations(
     plt.savefig(
         os.path.join(
             results_folder,
-            "classification_report.png",
+            "rbf_classification_report.png",
         ),
         dpi=300,
         bbox_inches="tight",
@@ -517,7 +517,7 @@ def rbf_probe_evaluation(
 
     # Preserve the original output directory structure for compatibility
     # with existing scripts and comparisons.
-    master_results_dir = "./linear_probe_results"
+    master_results_dir = "./rbf_probe_results"
 
     results_folder = os.path.join(
         master_results_dir,
@@ -959,7 +959,7 @@ def rbf_probe_evaluation(
         f"{results_folder}"
     )
 
-    print("\nClassification Report:")
+    print("\nRBF Classification Report:")
 
     print(
         classification_report(

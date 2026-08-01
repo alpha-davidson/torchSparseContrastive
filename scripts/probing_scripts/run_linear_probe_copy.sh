@@ -9,9 +9,9 @@ export MPLCONFIGDIR="/tmp/matplotlib-${SLURM_JOB_ID:-manual}"
 
 cd /home/DAVIDSON/tomallenntiador/torchSparseContrastive
 
-python -u src/evaluation/linear_probe.py \
+python -u -m src.evaluation.probing_files.linear_probe \
     --name O16_simclr_best \
     --seed 0 \
     --max-train-size 1475 \
-    embeddings/O16_combined_pretrain_best/latent_vectors.npy \
-    embeddings/O16_combined_pretrain_best/labels.npy
+    embeddings/O16_combined_ar46_c16_mg22/latent_vectors.npy \
+    embeddings/O16_combined_ar46_c16_mg22/labels.npy

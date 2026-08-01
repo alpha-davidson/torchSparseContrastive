@@ -73,7 +73,7 @@ def create_final_model_visualizations(X_test, y_test, y_pred, y_prob, class_name
     df = pd.DataFrame(report_dict).transpose().round(4)
 
     # Save as CSV
-    df.to_csv(f'{results_folder}/classification_report.csv')
+    df.to_csv(f'{results_folder}/linear_classification_report.csv')
 
     # Save as PNG
     fig, ax = plt.subplots(figsize=(10, 4))
@@ -82,7 +82,7 @@ def create_final_model_visualizations(X_test, y_test, y_pred, y_prob, class_name
     table.auto_set_font_size(False)
     table.set_fontsize(10)
     table.scale(1.2, 1.5)
-    plt.title('Classification Report', fontsize=14, fontweight='bold', pad=15)
+    plt.title('Linear Probe Classification Report', fontsize=14, fontweight='bold', pad=15)
     plt.savefig(f'{results_folder}/classification_report.png', dpi=300, bbox_inches='tight')
     plt.close()
 
@@ -341,7 +341,7 @@ def linear_probe_evaluation(name, test_size, seed, regularization, min_train_siz
     
     print(f"\nAll results saved to: {results_folder}")
 
-    print("\nClassification Report:")
+    print("\nLinearClassification Report:")
     print(classification_report(y_test, y_test_final_pred, target_names=class_names))
     
     return {

@@ -15,11 +15,14 @@ export PYTHONNOUSERSITE=1
 
 cd /home/DAVIDSON/tomallenntiador/torchSparseContrastive
 
+# ---------------------------------------------------------------------------
 # Dataset selection
-# Set DATASET_MODE="o16" for the original loader and "combined" for O16+Ar46.
+# Set DATASET_MODE="o16" for the original loader and "combined" for
+# virtual O16+Ar46+C16 training.
 # In combined mode, DATA, LENS, and DATASET_NAMES must have matching orders.
+# ---------------------------------------------------------------------------
 
-DATASET_MODE="combined" # Options: "o16" or "combined"
+DATASET_MODE="combined"
 
 if [[ "$DATASET_MODE" == "o16" ]]; then
     DATA=("data/O16_w_event_keys.npy")
@@ -29,19 +32,29 @@ elif [[ "$DATASET_MODE" == "combined" ]]; then
     DATA=(
         "data/O16_w_event_keys.npy"
         "data/Ar46_w_event_keys.npy"
+        "data/C16_w_event_keys.npy"
+        "data/Mg22_w_event_keys.npy"
     )
     LENS=(
         "data/O16_event_lens.npy"
         "data/Ar46_event_lens.npy"
+        "data/C16_event_lens.npy"
+        "data/Mg22_event_lens.npy"
     )
-    DATASET_NAMES=("O16" "Ar46")
+    # These names select columns in data/dataset_loaders/combined_dataset.py:
+    # O16 amplitude=4, Ar46 charge=3, C16 charge=3.
+    DATASET_NAMES=("O16" "Ar46" "C16" "Mg22")
 else
     echo "Unknown DATASET_MODE: $DATASET_MODE" >&2
     exit 2
 fi
 
 # Set RESUME to a checkpoint path to resume training.
-SAVE_DIR="checkpoints/${DATASET_MODE}"
+if [[ "$DATASET_MODE" == "combined" ]]; then
+    SAVE_DIR="checkpoints/combined_o16_ar46_c16_mg22"
+else
+    SAVE_DIR="checkpoints/o16_combined"
+fi
 RESUME=""
 
 # Training

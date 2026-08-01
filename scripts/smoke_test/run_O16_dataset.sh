@@ -10,4 +10,4 @@ cd /home/DAVIDSON/tomallenntiador/torchSparseContrastive
 
 mkdir -p logs data
 
-python -u -m src.data.o16_dataset
+python -u -m src.data.dataset_loaders.o16_dataset

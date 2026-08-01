@@ -13,11 +13,10 @@ Virtual combined mode (no joined numpy file is created):
     python -m src.training.train_contrastive \
         --dataset combined \
         --data data/O16_w_event_keys.npy data/Ar46_w_event_keys.npy \
+               data/C16_w_event_keys.npy \
         --lens data/O16_event_lens.npy data/Ar46_event_lens.npy \
-        --dataset-names O16 Ar46
-
-# Created: J. Gelina 06/22/26
-# Edited: T. Mallen-Ntiador 07/22/26 (adapted to use combined dataset loader)
+               data/C16_event_lens.npy \
+        --dataset-names O16 Ar46 C16
 """
 
 from __future__ import annotations
@@ -32,8 +31,8 @@ import torch.optim as optim
 import torchsparse.backends
 from torch.optim.lr_scheduler import CosineAnnealingLR
 
-from src.data.combined_dataset import make_attpc_dataloader
-from src.data.o16_dataset import make_o16_dataloader
+from src.data.dataset_loaders.combined_dataset import make_attpc_dataloader
+from src.data.dataset_loaders.o16_dataset import make_o16_dataloader
 from src.models.sparse_simclr import SparseSimCLR, sparse_simclr_21d
 
 

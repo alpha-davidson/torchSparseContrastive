@@ -9,4 +9,4 @@ cd /home/DAVIDSON/tomallenntiador/torchSparseContrastive
 
 mkdir -p logs data
 
-python -u -m src.data.O16_downstream_pipeline
+python -u -m src.data.legacy.O16_downstream_pipeline

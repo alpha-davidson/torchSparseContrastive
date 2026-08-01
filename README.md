@@ -1,203 +1,112 @@
 # torchSparseContrastive
 
-Self-supervised contrastive learning for O16 AT-TPC particle-track events using
-TorchSparse, a sparse 3D ResNet backbone, and a SimCLR / NT-Xent objective.
+Self-supervised contrastive learning for AT-TPC sparse 3D point-cloud events
+using TorchSparse, SparseResNet21D, and the SimCLR/NT-Xent objective.
 
-The repo has been reorganized around a package-style `src/` layout. The shell
-entrypoints in `scripts/` are the recommended way to run jobs on the cluster.
+Project-owned Python code is organized under [`src/`](src/README.md). Slurm job
+entrypoints are organized by workflow under [`scripts/`](scripts/README.md).
+Large datasets, checkpoints, embeddings, logs, and results are kept outside the
+source packages.
 
----
-
-## Current project layout
+## Repository layout
 
 ```text
 torchSparseContrastive/
 ├── src/
-│   ├── data/                  # O16 conversion, O16 datasets, legacy ShapeNet dataset
-│   ├── models/                # SparseSimCLR model and constructor shim
-│   ├── training/              # contrastive and supervised training entrypoints
-│   ├── evaluation/            # latent extraction and linear probing
-│   └── utils/                 # shared augmentation utilities
-├── scripts/                   # SLURM wrappers
-├── data/                      # raw/processed arrays and labels; usually not committed
-├── checkpoints/               # trained model checkpoints; usually not committed
-├── embeddings/                # extracted latent vectors; usually not committed
-├── linear_probe_results/      # linear-probe metrics, plots, reports
-├── logs/                      # SLURM/job logs
-└── torchsparse/               # local TorchSparse source/backend
+│   ├── data/
+│   │   ├── data_conversion_files/
+│   │   ├── dataset_loaders/
+│   │   ├── downstream_data_loader/
+│   │   └── legacy/
+│   ├── models/
+│   ├── training/
+│   ├── evaluation/
+│   │   ├── probing_files/
+│   │   └── legacy/
+│   ├── downstream/
+│   └── utils/
+├── scripts/
+│   ├── data_conversion_scripts/
+│   ├── smoke_test/
+│   ├── training_scripts/
+│   ├── downstream_dataloader_script/
+│   ├── latent_extraction/
+│   ├── probing_scripts/
+│   ├── downstream_eval_scripts/
+│   └── legacy/
+├── data/
+├── checkpoints/
+├── embeddings/
+├── results/
+├── linear_probe_results/
+├── logs/
+└── torchsparse/
 ```
 
-For a file-by-file explanation of `src/`, see [src/README.md](src/README.md).
+## Current workflow
 
----
-
-## Main Workflow  
-```
-Convert the h5 file, we need data ;/
-# run_convert_data.sh or run_convert_ar46.sh
-        ↓
-Smoke test, actual dataloader call imported 
-in train_contrastive.py
-# run_O16_dataset.sh 
-        ↓
-checkpoint exists
-        ↓
-Train contrastive model
-# run_train_O16_contrastive.sh
-        ↓
-Creates labeled variable-point_size for latent analysis
-# run_O16_downstream_pipeline_no_resample.sh
-        ↓
-labeled split files exist (checkpoint + labeled split files)
-        ↓
-Extract latents using checkpoints and labeled splits
-#  run_extract_latents_no_resample.sh
-        ↓
-Probe and evaluation
-# run_linear_probe_copy.sh or run_rbf_probe.sh
-        ↓
-PCA, T-SNE and UMAP from ATTPC Latent
-# global_feature_exploration
-
-```
---------------------------------------
-
-## Downstream (After -> O16_dataset.sh)
-
-### 1. Train SparseSimCLR
+Run commands from the repository root.
 
 ```bash
-sbatch scripts/run_train_O16_contrastive.sh
+# 1. Convert each raw isotope that will be used for pretraining.
+sbatch scripts/data_conversion_scripts/run_convert_data.sh
+sbatch scripts/data_conversion_scripts/run_convert_ar46.sh
+sbatch scripts/data_conversion_scripts/run_convert_c16.sh
+sbatch scripts/data_conversion_scripts/run_convert_mg22.sh
+
+# 2. Optional O16 sparse-loader smoke test.
+sbatch scripts/smoke_test/run_O16_dataset.sh
+
+# 3. Train O16-only or combined-isotope SparseSimCLR.
+sbatch scripts/training_scripts/run_train_O16_contrastive.sh
+
+# 4. Build labeled, variable-length O16 train/validation/test splits.
+sbatch scripts/downstream_dataloader_script/run_O16_downstream_no_resample.sh
+
+# 5a. Frozen-representation evaluation.
+sbatch scripts/latent_extraction/run_extract_latents_no_resample.sh
+sbatch scripts/probing_scripts/run_linear_probe_copy.sh
+# or: sbatch scripts/probing_scripts/run_rbf_probe.sh
+
+# 5b. Dynamic supervised checkpoint comparison and random baseline.
+sbatch scripts/downstream_eval_scripts/run_downstream_checkpoint_classification.sh
+sbatch scripts/downstream_eval_scripts/run_downstream_random_classification.sh
 ```
 
-This runs:
+Data conversion only needs to be rerun when its raw input or desired converted
+output changes. The smoke test exercises the same O16 loader imported by the
+trainer but does not prepare a separate training dataset.
 
-```bash
-python -u -m src.training.train_contrastive
-```
-
-Important current settings:
+## Model path
 
 ```text
-voxel_size       = 0.025 (0 to 40 on all axes, going to be updated)
-hash_rsv_ratio   = 8
-in_channels      = 1   # amplitude only
+event hits (x, y, z, amplitude)
+    ├─ augmentation A → voxelization → SparseTensor view A
+    └─ augmentation B → voxelization → SparseTensor view B
+
+each view → SparseResNet21D → global average pool → projection MLP
+two normalized projections → NT-Xent loss
 ```
 
-### 2. Build labeled downstream splits
+`model.encode` exposes the 128-dimensional globally pooled backbone feature for
+latent extraction and downstream heads. The SimCLR projection is used only for
+the contrastive objective.
+
+## Active and legacy paths
+
+The active O16 downstream builder preserves true event lengths and writes
+`O16_UNSAMPLED` splits. Files under `src/data/legacy/`,
+`src/evaluation/legacy/`, and `scripts/legacy/` retain earlier fixed-512 or
+superseded workflows for provenance and should not be mixed into the active
+pipeline.
+
+## Refactor checks
 
 ```bash
-sbatch scripts/run_O16_downstream_pipeline.sh
+python -m compileall -q src
+find scripts -type f -name '*.sh' -exec bash -n {} \;
 ```
 
-This runs:
-
-```bash
-python -u -m src.data.O16_downstream_pipeline
-```
-
-and produces split files such as:
-
-```text
-data/O16_size512_train.npy
-data/O16_size512_val.npy
-data/O16_size512_test.npy
-```
-
-The downstream pipeline expects `data/O16_labels.csv` to contain event-level
-track-count labels.
-
-
-### 3. Extract latent vectors
-
-```bash
-sbatch scripts/run_extract_latents.sh
-```
-
-This runs:
-
-```bash
-python -u -m src.evaluation.extract_latents
-```
-
-and writes:
-
-```text
-embeddings/O16_simclr_best/latent_vectors.npy
-embeddings/O16_simclr_best/labels.npy
-```
-
-### 4. Linear-probe evaluation
-
-```bash
-sbatch scripts/linear_probe_copy.sh
-```
-
-This runs:
-
-```bash
-python -u src/evaluation/linear_probe.py
-```
-
-and writes learning curves, a confusion matrix, and classification reports to:
-
-```text
-linear_probe_results/O16_simclr_best_learning_curve/
-```
-Originally from ATTPC Latent
-
----
-
-## Model summary
-
-```text
-O16 event hits: x, y, z, amplitude
-        │
-        ├── augmentation A → voxelize → SparseTensor view_a
-        └── augmentation B → voxelize → SparseTensor view_b
-
-view_a → SparseResNet21D → sparse global avg pool → ProjectionHead → z_a
-view_b → SparseResNet21D → sparse global avg pool → ProjectionHead → z_b
-
-loss = NT-Xent(z_a, z_b)
-```
-
----
-
-## Notes on `contrastive_dataset.py`
-
-`src/data/legacy_files/contrastive_dataset.py` is a legacy/general ShapeNet-style
-contrastive dataset for `.pt` files containing point clouds, normals, labels,
-and optional train/val/test indices.
-
-It is not used by the current O16 training path. The O16 path uses
-`src/data/o16_dataset.py`.
-
-did not run `contrastive_dataset.py`; it is
-kept as reference/legacy support for ShapeNet-style experiments.
-
----
-
-## Sanity checks
-
-Useful quick checks after refactors:
-
-```bash
-PYTHONNOUSERSITE=1 /home/DAVIDSON/tomallenntiador/.conda/envs/contrastive/bin/python \
-  -m py_compile $(find src -name '*.py' -not -path '*/__pycache__/*')
-
-for f in scripts/*.sh; do bash -n "$f" || exit 1; done
-
-PYTHONNOUSERSITE=1 /home/DAVIDSON/tomallenntiador/.conda/envs/contrastive/bin/python \
-  -c "from src.models.sparse_simclr import sparse_simclr_21d; print('imports ok')"
-```
-
----
-
-## Current cleanup caution
-
-The canonical source code now lives under `src/`. Some generated directories,
-TorchSparse vendor files, logs, checkpoints, and old sanity-check outputs may
-still appear in `git status`. Use `git status --short` before moving/deleting
-anything, and prefer `git add -A` only once the structure is intentionally
-settled.
+Use `git status --short` before deleting or moving files: converted arrays,
+checkpoints, results, and local TorchSparse build artifacts can be large and
+are not interchangeable with source files.
