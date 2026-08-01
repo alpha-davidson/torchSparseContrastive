@@ -13,7 +13,7 @@ module load GCC/11.3.0
 
 export PYTHONNOUSERSITE=1
 
-cd /home/DAVIDSON/tomallenntiador/torchSparseContrastive
+cd ../torchSparseContrastive
 
 # --- Paths ---
 # IF YOU WOULD LIKE TO RESUME FROM A CHECKPOINT, SET RESUME TO THE CHECKPOINT PATH (e.g. checkpoints/best.pt)

@@ -7,7 +7,7 @@ source activate contrastive
 export PYTHONNOUSERSITE=1
 export MPLCONFIGDIR="/tmp/matplotlib-${SLURM_JOB_ID:-manual}"
 
-cd /home/DAVIDSON/tomallenntiador/torchSparseContrastive
+cd ../torchSparseContrastive
 
 python -u -m src.evaluation.probing_files.rbf_probe \
     --name O16_simclr_best \

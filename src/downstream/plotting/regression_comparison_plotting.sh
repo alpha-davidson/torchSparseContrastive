@@ -9,7 +9,7 @@ export PYTHONNOUSERSITE=1
 export MPLCONFIGDIR="/tmp/matplotlib-${SLURM_JOB_ID:-manual}"
 export XDG_CACHE_HOME="/tmp/cache-${SLURM_JOB_ID:-manual}"
 
-cd /home/DAVIDSON/tomallenntiador/torchSparseContrastive
+cd ../torchSparseContrastive
 
 # Replace this with the prefix used when pointwise regression data/evaluation
 # is available. O16_UNSAMPLED currently contains event-classification labels,

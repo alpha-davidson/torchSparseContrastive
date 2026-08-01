@@ -20,7 +20,7 @@ import h5py
 import os
 import pandas as pd
 
-DATA_PATH = '/home/DAVIDSON/tomallenntiador/torchSparseContrastive/data/'
+DATA_PATH = '../torchSparseContrastive/data/'
 ISOTOPE = 'O16'
 OUT_PREFIX = ISOTOPE + '_UNSAMPLED'
 

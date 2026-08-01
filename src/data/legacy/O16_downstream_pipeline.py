@@ -16,7 +16,7 @@ import pandas as pd
 from sklearn import preprocessing
  
 
-DATA_PATH = '/home/DAVIDSON/tomallenntiador/torchSparseContrastive/data/'
+DATA_PATH = '../torchSparseContrastive/data/'
 ISOTOPE = 'O16'
 SAMPLE_SIZE = 512 # number of samples per event
 

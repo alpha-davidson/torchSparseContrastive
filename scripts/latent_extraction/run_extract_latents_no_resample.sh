@@ -12,7 +12,7 @@ module load GCC/11.3.0
 
 export PYTHONNOUSERSITE=1
 
-cd /home/DAVIDSON/tomallenntiador/torchSparseContrastive
+cd ../torchSparseContrastive
 
 # Combined-pretraining checkpoint; downstream extraction uses the canonical
 # labeled variable-length O16 splits for an apples-to-apples probe comparison.

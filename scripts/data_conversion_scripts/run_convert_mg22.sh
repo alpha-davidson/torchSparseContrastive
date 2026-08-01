@@ -6,7 +6,7 @@
 
 source activate contrastive
 
-cd /home/DAVIDSON/tomallenntiador/torchSparseContrastive
+cd ../torchSparseContrastive
 
 mkdir -p logs data
 

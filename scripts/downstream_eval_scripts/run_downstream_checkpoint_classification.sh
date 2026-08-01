@@ -13,7 +13,7 @@ module load GCC/11.3.0
 export PYTHONNOUSERSITE=1
 export MPLCONFIGDIR="/tmp/matplotlib-${SLURM_JOB_ID}"
 
-cd /home/DAVIDSON/tomallenntiador/torchSparseContrastive
+cd ../torchSparseContrastive
 
 DATA_DIR="data"
 PREFIX="O16_UNSAMPLED"
