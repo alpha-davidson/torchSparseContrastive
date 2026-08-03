@@ -30,6 +30,7 @@ def sparse_collate(inputs: List[SparseTensor]) -> SparseTensor:
     coords = torch.cat(coords, dim=0)
     feats = torch.cat(feats, dim=0)
     output = SparseTensor(coords=coords, feats=feats, stride=stride)
+    output.batch_size = len(inputs)
     return output
 
 

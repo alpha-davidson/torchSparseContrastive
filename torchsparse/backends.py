@@ -2,6 +2,8 @@ import torch
 
 
 def init():
+    if not torch.cuda.is_available():
+        return
     global benchmark, allow_tf32, allow_fp16, device_capability, hash_rsv_ratio
     benchmark = False
     device_capability = torch.cuda.get_device_capability()

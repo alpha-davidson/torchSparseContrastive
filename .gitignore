@@ -1,3 +1,16 @@
 .vscode/
 build/
 *.pyc
+
+# Large local data files
+/data/
+checkpoints/
+checkpoints_debug/
+logs/
+results_generation_(temp_sanity_check)/
+legacy_results/
+embeddings/
+linear_probe_results/
+.ipynb_checkpoints/
+src/evaluation/global_feature_exploration.ipynb
+results/
